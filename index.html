@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>LUAN BINGO v10 | Secretariat Edition</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<style>
+/* ===== RESET & BASE ===== */
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,'Segoe UI',sans-serif;}
+body{background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;padding:12px;}
+#app{max-width:1200px;margin:0 auto;}
+
+/* ===== CARD ===== */
+.card{background:white;border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 12px 30px rgba(0,0,0,0.18);}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+
+/* ===== BOTONES ===== */
+.btn{padding:11px 22px;border-radius:30px;border:none;font-weight:700;cursor:pointer;transition:.18s;font-size:.9rem;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.2);}
+.btn:active{transform:translateY(0);}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-primary{background:linear-gradient(135deg,#764ba2,#667eea);color:white;}
+.btn-success{background:linear-gradient(135deg,#10b981,#059669);color:white;}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:white;}
+.btn-warning{background:linear-gradient(135deg,#f59e0b,#d97706);color:white;}
+.btn-info{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;}
+.btn-outline{background:transparent;border:2px solid #764ba2;color:#764ba2;}
+.btn-gray{background:#94a3b8;color:white;}
+.btn-wa{background:#25d366;color:white;}
+.w100{width:100%;}
+
+/* ===== INPUTS ===== */
+input,select{width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:12px;font-size:1rem;margin-bottom:10px;}
+input:focus,select:focus{outline:none;border-color:#764ba2;}
+
+/* ===== GALERÍA CARTONES ===== */
+/* ── GALERÍA v9-style ── */
+.galeria{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:10px;background:#f8fafc;border-radius:14px;margin-top:10px;}
+@media(min-width:600px){.galeria{grid-template-columns:repeat(3,1fr);}}
+@media(min-width:900px){.galeria{grid-template-columns:repeat(4,1fr);}}
+@media(min-width:1200px){.galeria{grid-template-columns:repeat(5,1fr);}}
+.carton-container{width:100%;}
+.mini-carton{background:white;border:2px solid #cbd5e1;border-radius:8px;padding:4px;cursor:pointer;transition:all .25s;box-shadow:0 4px 10px rgba(0,0,0,.1);display:flex;flex-direction:column;margin-bottom:4px;}
+.mini-carton:hover{transform:translateY(-4px);border-color:#764ba2;box-shadow:0 10px 25px rgba(118,75,162,.35);}
+.mini-carton.reservado{border-color:#a855f7;background:linear-gradient(135deg,#faf5ff,#f3e8ff);box-shadow:0 0 18px rgba(168,85,247,.4);}
+.mini-carton-header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:3px 4px;border-radius:4px;text-align:center;margin-bottom:4px;display:flex;justify-content:center;align-items:center;gap:4px;font-size:.6rem;font-weight:bold;min-height:16px;}
+.bingo-text{font-size:.5rem;opacity:.9;}
+.carton-id{font-size:.6rem;font-weight:900;}
+.carton-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;}
+.carton-col{display:flex;flex-direction:column;gap:2px;}
+.carton-header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:4px;text-align:center;font-weight:bold;border-radius:3px;font-size:.7rem;min-height:18px;display:flex;align-items:center;justify-content:center;}
+.carton-cell{background:#f1f5f9;padding:3px 1px;text-align:center;border-radius:2px;font-weight:bold;min-height:16px;display:flex;align-items:center;justify-content:center;font-size:.6rem;line-height:1;}
+.carton-cell.free{background:#fef08a;color:#000;font-style:italic;font-size:.5rem;}
+.carton-cell.cantado{background:#10b981;color:white;}
+.cc{background:#f1f5f9;text-align:center;padding:5px 2px;border-radius:4px;font-size:.65rem;font-weight:600;}
+.cc.libre{background:#fef08a;color:#854d0e;}
+.cc.cantado{background:#10b981;color:white;}
+
+/* ===== CHIPS ===== */
+/* ── CHIPS RESERVAS estilo v9 ── */
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:30px;font-size:.82rem;font-weight:600;margin:3px;}
+.chip-reservado{display:inline-flex;align-items:center;gap:8px;background:#a855f7;color:white;padding:8px 15px;border-radius:20px;margin:4px;font-weight:bold;font-size:.92rem;animation:slideIn .3s;}
+.chip-cp-sel{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;padding:8px 15px;border-radius:20px;margin:4px;font-weight:bold;font-size:.92rem;animation:slideIn .3s;}
+.chip-ok{background:#10b981;color:white;}
+.chip-warn{background:#f59e0b;color:white;}
+.chips-area{display:flex;flex-wrap:wrap;gap:4px;min-height:40px;padding:6px 0;}
+/* ── SECCIÓN RESERVAS estilo v9 ── */
+.section-reservas{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #10b981;border-radius:16px;padding:18px;margin-bottom:16px;}
+
+/* ===== MODAL ===== */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;align-items:center;justify-content:center;padding:12px;}
+.modal.on{display:flex;}
+.modal-box{background:white;border-radius:24px;max-width:580px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;}
+
+/* ===== TABLERO BINGO (admin) ===== */
+.tablero{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0;}
+.col-bingo{background:rgba(255,255,255,.12);border-radius:12px;padding:8px;}
+.col-titulo{text-align:center;font-weight:bold;color:white;margin-bottom:6px;font-size:1.1rem;}
+.nums-col{display:flex;flex-direction:column;gap:3px;}
+.num-cel{background:rgba(255,255,255,.92);border-radius:5px;padding:3px 2px;text-align:center;font-size:.82rem;font-weight:bold;cursor:pointer;transition:all .15s;user-select:none;}
+.num-cel:hover:not(.cantado){background:#fbbf24;transform:scale(1.08);}
+.num-cel.cantado{background:#10b981;color:white;text-decoration:line-through;opacity:.75;cursor:default;}
+
+/* ===== PATRON GRID ===== */
+.patron-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0;}
+.patron-cel{padding:14px;border-radius:10px;text-align:center;cursor:pointer;font-weight:bold;border:2px solid #cbd5e1;transition:.15s;}
+.patron-cel.activo{background:#10b981;color:white;border-color:#10b981;}
+
+/* ===== CP CREATOR ===== */
+.cp-nums{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:14px 0;}
+.cp-btn{padding:8px;background:white;border:2px solid #cbd5e1;border-radius:8px;cursor:pointer;font-weight:bold;transition:.12s;}
+.cp-btn.sel{background:#10b981;color:white;border-color:#10b981;}
+
+/* ===== VERIFICACIÓN DUPLICADOS ===== */
+.verif-ok{background:#d1fae5;border:2px solid #10b981;border-radius:12px;padding:14px;margin:10px 0;font-weight:bold;color:#065f46;}
+.verif-err{background:#fee2e2;border:2px solid #ef4444;border-radius:12px;padding:14px;margin:10px 0;}
+
+/* ===== LOGS ===== */
+.logs{background:#0f172a;color:#94a3b8;padding:10px;border-radius:10px;font-family:monospace;font-size:.7rem;max-height:160px;overflow-y:auto;margin-top:10px;}
+
+/* ===== UTILIDADES ===== */
+.flex{display:flex;}.gap{gap:10px;}.wrap{flex-wrap:wrap;}.between{justify-content:space-between;}
+.mt{margin-top:12px;}.mb{margin-bottom:12px;}.center{text-align:center;}
+.badge{padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;display:inline-block;}
+.badge-ok{background:#10b981;color:white;}.badge-warn{background:#f59e0b;color:white;}.badge-err{background:#ef4444;color:white;}
+.proximidad-bar{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-top:4px;}
+.prox-fill{height:100%;background:linear-gradient(90deg,#10b981,#f59e0b);border-radius:4px;transition:.4s;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+.ganador-anim{animation:pulse .6s ease-in-out 3;}
+</style>
+</head>
+<body>
+<div id="fb-badge" style="position:fixed;top:10px;right:10px;padding:6px 14px;border-radius:20px;font-size:.82rem;font-weight:bold;z-index:9000;box-shadow:0 4px 10px rgba(0,0,0,.2);background:var(--wa);color:white;">⏳ Conectando...</div>
+<div id="app" class="app"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  LUAN BINGO v10 — Secretariat Edition
+//  Arquitectura: Store centralizado + renderApp()
+// ═══════════════════════════════════════════════
+
+// ── FIREBASE ──────────────────────────────────
+const FB = {
+    apiKey:"AIzaSyCzmWgMMliY-9U-Yx9iF6XSG5yRZnRnCp0",
+    authDomain:"luanbingoadmin.firebaseapp.com",
+    projectId:"luanbingoadmin",
+    storageBucket:"luanbingoadmin.firebasestorage.app",
+    messagingSenderId:"1052655189822",
+    appId:"1:1052655189822:web:2129d493b1497f85ab366f"
+};
+if (!firebase.apps.length) firebase.initializeApp(FB);
+const db = firebase.firestore();
+// Auth anónima — requerida por las reglas Firestore
+// Auth se maneja en init() esperando onAuthStateChanged
+
+// ── NORMALIZACIÓN TELÉFONO ────────────────────
+const normTel = t => {
+    let n = t.replace(/\D/g,'');
+    if (n.startsWith('0')) n = '58' + n.slice(1);
+    return n;
+};
+
+// ── CONSTANTES ────────────────────────────────
+const ADMIN_TEL = '584165402030';
+const ADMIN_PASS = '7048425';
+const LETRAS = ['B','I','N','G','O'];
+const RANGOS = {B:[1,15],I:[16,30],N:[31,45],G:[46,60],O:[61,75]};
+const COLS_CP = {B:5,I:5,N:4,G:5,O:5};
+
+// ── STORE CENTRAL ─────────────────────────────
+const S = {
+    // Sesión
+    user: null,           // {phone, alias}
+    adminOk: false,
+    fbConectado: false,
+
+    // Cartones
+    cartones: [],         // array de 660 + CPs cargados de Firebase
+    misReservas: new Set(), // IDs reservados por user actual
+    misCPs: [],           // CPs del user actual
+    cpSeleccionados: [],  // CPs elegidos para jugar/pagar
+
+    // Solicitud
+    solicitudEnviada: false,
+    verificacionOk: false,
+
+    // Juego (admin)
+    numerosCantados: [],
+    patron: Array(5).fill(null).map(()=>Array(5).fill(false)),
+    ganadores: [],
+    modoJuego: 'aleatorio',
+
+    // Hora inicio
+    horaInicio: null,
+
+    // Listeners activos
+    _unsubCartones: null,
+    _unsubRecientes: null,
+
+    // Logs
+    logs: []
+};
+
+// ── CARTONES FIJOS (array literal del v9) ─────
+// Usamos el mismo generador determinístico del v9 para compatibilidad
+// Se reemplaza por CARTONES_FIJOS del v9 si se tiene disponible
+function generarCarton(id) {
+    const rnd = s => { let x = Math.sin(s)*10000; return x-Math.floor(x); };
+    let numbers = {};
+    for (let l of LETRAS) {
+        const [mn,mx] = RANGOS[l];
+        const cant = COLS_CP[l];
+        let nums = new Set(), seed = id * l.charCodeAt(0);
+        while (nums.size < cant) {
+            nums.add(mn + Math.floor(rnd(seed + nums.size) * (mx-mn+1)));
+            seed++;
+        }
+        let arr = Array.from(nums);
+        if (l==='N') arr.splice(2,0,'LIBRE');
+        numbers[l] = arr;
+    }
+    return {id, numbers, esPersonalizado:false, reserved:false, paid:false,
+            owner:null, ownerPhone:null, ownerAlias:null};
+}
+for (let i=1;i<=701;i++) S.cartones.push(generarCarton(i)); // ⚠️ LEY LUAN — NO MODIFICAR
+
+// ── LOGGING ───────────────────────────────────
+function log(msg) {
+    S.logs.unshift(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    if (S.logs.length > 60) S.logs.pop();
+    const el = document.getElementById('logs');
+    if (el) el.innerHTML = S.logs.map(l=>`<div>${l}</div>`).join('');
+}
+
+// ── NOTIFICACIÓN FLOTANTE (como v9) ──────────
+function notif(msg, tipo='success', dur=2000) {
+    const prev = document.querySelector('.notif-flotante');
+    if (prev) prev.remove();
+    if (!document.getElementById('notif-css')) {
+        const s = document.createElement('style');
+        s.id = 'notif-css';
+        s.textContent = `
+        @keyframes nfIn{from{opacity:0;transform:translateX(-50%) translateY(-16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+        @keyframes nfOut{from{opacity:1}to{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+        .notif-flotante{position:fixed;top:24%;left:50%;transform:translateX(-50%);
+            padding:12px 28px;border-radius:40px;box-shadow:0 10px 25px rgba(0,0,0,.3);
+            z-index:99999;font-size:1rem;font-weight:700;display:flex;align-items:center;
+            gap:8px;min-width:200px;max-width:320px;text-align:center;color:white;
+            animation:nfIn .35s ease;border:2px solid rgba(255,255,255,.25);}`;
+        document.head.appendChild(s);
+    }
+    const el = document.createElement('div');
+    el.className = 'notif-flotante';
+    el.style.background = tipo==='success'?'#10b981':tipo==='error'?'#ef4444':'#f59e0b';
+    const ico = tipo==='success'?'✅':tipo==='error'?'❌':'⚠️';
+    el.innerHTML = `${ico} <span>${msg}</span>`;
+    document.body.appendChild(el);
+    setTimeout(()=>{ el.style.animation='nfOut .3s ease'; setTimeout(()=>el.remove(),300); }, dur);
+}
+
+// ── RENDER PRINCIPAL ──────────────────────────
+function render() {
+    if (!S.adminOk && !S.user) renderHome();
+    else if (S.adminOk) renderAdmin();
+    else renderJugador();
+}
+
+// ════════════════════════════════════════════
+//  HOME
+// ════════════════════════════════════════════
+function renderHome() {
+    const est = S.cartones.filter(c => !c.esPersonalizado);
+    const libres  = est.filter(c => !c.reserved && !c.paid).length;
+    const reserv  = est.filter(c => c.reserved && !c.paid).length;
+    const pagados = est.filter(c => c.paid).length;
+    set('app', `
+    <div class="card center" style="max-width:540px;margin:40px auto;">
+        <div style="font-size:3rem;">🎰</div>
+        <h1 style="margin:10px 0 4px;background:linear-gradient(135deg,#764ba2,#667eea);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">LUAN BINGO v10</h1>
+        <p style="color:#64748b;margin-bottom:8px;">Secretariat Edition</p>
+        <div id="fb-status" style="font-size:.82rem;margin-bottom:14px;font-weight:bold;color:#94a3b8;">⏳ Conectando...</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:16px;max-width:98%;">
+            <div style="background:#f8fafc;border-radius:12px;padding:8px 4px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:900;color:#764ba2;" id="st-total">${est.length}</div>
+                <div style="font-size:.78rem;color:#64748b;">Total</div>
+            </div>
+            <div style="background:#f0fdf4;border-radius:12px;padding:12px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:900;color:#10b981;" id="st-libre">${libres}</div>
+                <div style="font-size:.78rem;color:#64748b;">Libres</div>
+            </div>
+            <div style="background:#faf5ff;border-radius:12px;padding:12px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:900;color:#a855f7;" id="st-res">${reserv}</div>
+                <div style="font-size:.78rem;color:#64748b;">Reservados</div>
+            </div>
+            <div style="background:#fffbeb;border-radius:12px;padding:12px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:900;color:#f59e0b;" id="st-pay">${pagados}</div>
+                <div style="font-size:.78rem;color:#64748b;">Jugando</div>
+            </div>
+        </div>
+        <div class="flex gap wrap" style="justify-content:center;">
+            <button class="btn btn-primary" onclick="renderLogin()">👥 SOY JUGADOR</button>
+            <button class="btn btn-warning" onclick="renderLoginAdmin()">🛡️ ADMIN</button>
+        </div>
+        <div id="logs" class="logs mt"></div>
+    </div>`);
+}
+
+// ── LOGIN JUGADOR ─────────────────────────────
+function renderLogin() {
+    set('app', `
+    <div class="card" style="max-width:460px;margin:40px auto;">
+        <h2>👋 Acceso Jugador</h2>
+        <input type="tel" id="inp-phone" placeholder="Teléfono ej: 04141234567">
+        <input type="text" id="inp-alias" placeholder="Tu nombre / alias">
+        <button class="btn btn-success w100" onclick="loginJugador()">🎮 Entrar</button>
+        <button class="btn btn-outline w100 mt" onclick="render()">← Volver</button>
+        <div id="login-msg" style="min-height:20px;margin-top:8px;font-weight:bold;color:#ef4444;"></div>
+        <div id="logs" class="logs mt"></div>
+    </div>`);
+    document.getElementById('inp-phone')?.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('inp-alias').focus(); });
+    document.getElementById('inp-alias')?.addEventListener('keydown', e=>{ if(e.key==='Enter') loginJugador(); });
+}
+
+async function loginJugador() {
+    const phone = normTel(document.getElementById('inp-phone').value.trim());
+    const alias = document.getElementById('inp-alias').value.trim();
+    const msg   = document.getElementById('login-msg');
+    if (phone.length < 10) { msg.textContent='⚠️ Teléfono inválido'; return; }
+    if (alias.length < 2)  { msg.textContent='⚠️ Ingresa tu nombre'; return; }
+    msg.textContent = '⏳ Conectando...';
+    S.user = {phone, alias};
+    S.misReservas.clear(); S.cpSeleccionados=[]; S.misCPs=[];
+    S.solicitudEnviada=false; S.verificacionOk=false;
+    try {
+        // Intentar Firebase directamente — si funciona, estamos conectados
+        await db.collection('usuarios').doc(phone).set(
+            {alias, phone, ultimoLogin: firebase.firestore.FieldValue.serverTimestamp()},
+            {merge:true}
+        );
+        S.fbConectado = true;
+        // Actualizar badge de estado en el panel jugador
+        const fbEl = document.getElementById('p-fb-status');
+        if (fbEl) { fbEl.textContent='🟢 Firebase conectado'; fbEl.style.color='#10b981'; }
+        const fbB = document.getElementById('fb-badge');
+        if (fbB) { fbB.textContent='🟢 Firebase'; fbB.style.background='#10b981'; }
+        // Restaurar reservas del día
+        const snap = await db.collection('cartones_estado')
+            .where('reservedBy','==',phone).where('paid','==',false).get();
+        snap.forEach(d => {
+            const id = d.data().id || parseInt(d.id);
+            S.misReservas.add(id);
+            const c = S.cartones.find(x=>x.id===id);
+            if(c){c.reserved=true;c.reservedBy=phone;c.reservedAlias=alias;}
+        });
+        // Cargar CPs del jugador
+        await recargarCPsJugador(phone);
+        suscribirCartones();
+        log(`✅ ${alias} (${phone}) conectado`);
+    } catch(e) {
+        // Firebase no disponible — modo local
+        S.fbConectado = false;
+        const fbEl = document.getElementById('p-fb-status');
+        if (fbEl) { fbEl.textContent='🔴 Sin conexión Firebase'; fbEl.style.color='#ef4444'; }
+        restaurarReservasLocal(phone);
+        log(`⚠️ Modo local: ${e.message}`);
+    }
+    render();
+}
+
+// ── LOGIN ADMIN ───────────────────────────────
+function renderLoginAdmin() {
+    set('app', `
+    <div class="card" style="max-width:400px;margin:80px auto;">
+        <h2 class="center">🛡️ Acceso Admin</h2>
+        <input type="password" id="inp-pass" placeholder="Contraseña admin">
+        <button class="btn btn-warning w100" onclick="loginAdmin()">🔓 Entrar</button>
+        <button class="btn btn-outline w100 mt" onclick="render()">← Volver</button>
+        <div id="pass-msg" style="min-height:20px;margin-top:8px;font-weight:bold;color:#ef4444;"></div>
+    </div>`);
+    document.getElementById('inp-pass')?.addEventListener('keydown',e=>{if(e.key==='Enter')loginAdmin();});
+}
+
+function loginAdmin() {
+    const pass = document.getElementById('inp-pass').value;
+    if (pass !== ADMIN_PASS) { document.getElementById('pass-msg').textContent='❌ Contraseña incorrecta'; return; }
+    S.adminOk = true;
+    log('🛡️ Admin autenticado');
+    render();
+}
+
+// ════════════════════════════════════════════
+//  PANEL JUGADOR
+// ════════════════════════════════════════════
+function renderJugador() {
+    const u = S.user;
+    const reservasArr = Array.from(S.misReservas);
+    const totalItems = reservasArr.length + S.cpSeleccionados.length;
+    const btnVerifStyle = totalItems===0 ? 'display:none' : '';
+    const btnSolStyle = (S.verificacionOk && totalItems>0) ? '' : 'opacity:.5;cursor:not-allowed;';
+
+    set('app', `
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 style="margin:0;">👋 ${u.alias}</h2>
+                <span style="font-size:.78rem;font-weight:bold;color:${S.fbConectado?'#10b981':'#ef4444'};">
+                    ${S.fbConectado?'🟢 Firebase conectado':'🔴 Sin conexión'}
+                </span>
+            </div>
+            <button class="btn btn-outline" onclick="logoutJugador()">🚪 Salir</button>
+        </div>
+
+        <!-- CARTONES APROBADOS (pagados) -->
+        <div id="mis-pagados"></div>
+
+        <!-- RESERVAS ACTIVAS — estilo v9 -->
+        <div id="bloque-reservas" class="section-reservas ${totalItems===0?'d-none':''}">
+            <h3>🎫 Mis Cartones Reservados (<span id="count-reservados">${reservasArr.length + S.cpSeleccionados.length}</span>)</h3>
+            <p style="color:#64748b;font-size:.88rem;margin-bottom:10px;">Estos cartones están apartados para ti</p>
+            <div class="chips-area" id="chips-reservados"></div>
+
+            <!-- VERIFICAR -->
+            <button class="btn w100 mt" id="btn-verif" onclick="verificarDuplicados()"
+                style="padding:16px;font-size:1.05rem;font-weight:bold;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;border:none;border-radius:12px;">
+                🔍 1. Verificar cartones antes de pagar
+            </button>
+            <div id="resultado-verif" style="margin-top:10px;display:none;"></div>
+
+            <!-- SOLICITAR ACTIVACIÓN — verde cogollo, bloqueado hasta verificar -->
+            <button class="btn w100 mt" id="btn-sol" onclick="abrirSolicitud()"
+                disabled
+                style="padding:18px;font-size:1.2rem;font-weight:bold;border:none;border-radius:12px;background:linear-gradient(135deg,#9ca3af,#6b7280);color:white;cursor:not-allowed;opacity:0.6;">
+                🔒 2. SOLICITAR ACTIVACIÓN (verifica primero)
+            </button>
+        </div>
+
+        <!-- LIMPIAR -->
+        <button class="btn btn-gray mt" onclick="limpiarReservas()" style="${totalItems===0?'display:none':''}">🗑️ Limpiar reservas</button>
+
+        <!-- CPs -->
+        <div class="mt flex gap wrap">
+            <button class="btn btn-primary" onclick="iniciarCreadorCP()">✨ Crear CP</button>
+            <button class="btn btn-info" onclick="abrirSelectorCP()" ${S.misCPs.filter(c=>!c.paid).length?'':'disabled'}>🎯 Seleccionar CP</button>
+        </div>
+
+        <!-- SELECTOR RÁPIDO POR IDs -->
+        <div class="player-section mt" style="background:#f0f4ff;border-radius:14px;padding:16px;">
+            <h3>⚡ Selector Rápido por IDs</h3>
+            <p style="color:#64748b;font-size:.88rem;margin-bottom:10px;">Ingresa los IDs separados por comas (ej: 15, 234, 567)</p>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="quick-ids" placeholder="Ej: 15, 234, 567, 890" style="flex:1;margin:0;border-color:#764ba2;">
+                <button class="btn btn-primary" onclick="seleccionarRapido()" style="white-space:nowrap;">➕ Seleccionar</button>
+            </div>
+        </div>
+
+        <!-- BUSCADOR POR NÚMEROS -->
+        <div class="player-section mt" style="background:#fffbeb;border-radius:14px;padding:16px;">
+            <h3>🔍 Buscar por Números</h3>
+            <p style="color:#64748b;font-size:.88rem;margin-bottom:10px;">Busca cartones que contengan TODOS estos números</p>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                <input type="text" id="search-numbers" placeholder="Ej: 7, 25, 42, 63" style="flex:1;margin:0;border-color:#f59e0b;">
+                <button class="btn btn-warning" onclick="buscarPorNumeros()" style="white-space:nowrap;">🔍 Buscar</button>
+            </div>
+            <div id="search-results" style="max-height:320px;overflow-y:auto;"></div>
+        </div>
+
+        <!-- GALERÍA -->
+        <h3 class="mt">🎰 Cartones disponibles</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+            <span id="galeria-info" style="font-size:.85rem;color:#64748b;"></span>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-outline" id="btn-pag-prev" onclick="cambiarPagGaleria(-1)" style="padding:6px 14px;">← Ant</button>
+                <span id="pag-label" style="font-weight:bold;font-size:.85rem;"></span>
+                <button class="btn btn-outline" id="btn-pag-next" onclick="cambiarPagGaleria(1)" style="padding:6px 14px;">Sig →</button>
+            </div>
+        </div>
+        <div class="galeria" id="galeria"></div>
+
+        <div id="logs" class="logs mt"></div>
+    </div>`);
+
+    renderChipsReservas();
+    renderMisPagados();
+    renderMisCPs();
+    renderGaleria();
+
+    document.getElementById('quick-ids')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') seleccionarRapido();
+    });
+    document.getElementById('search-numbers')?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') buscarPorNumeros();
+    });
+}
+
+function renderChipsReservas() {
+    // Usar chips-reservados (igual que v9)
+    const cont = document.getElementById('chips-reservados');
+    if (!cont) return;
+    cont.innerHTML = '';
+
+    if (S.misReservas.size === 0 && S.cpSeleccionados.length === 0) {
+        cont.innerHTML = '<span style="color:#64748b;font-size:.88rem;">Sin cartones seleccionados</span>';
+        return;
+    }
+
+    // Chips estándar — estilo v9 chip-reservado
+    S.misReservas.forEach(id => {
+        const chip = document.createElement('div');
+        chip.className = 'chip-reservado';
+        chip.innerHTML = `🎫 BINGO #${id}
+            <button onclick="cancelarReserva(${id})"
+                style="background:none;border:none;color:white;cursor:pointer;font-size:1.2rem;margin-left:4px;line-height:1;">×</button>`;
+        cont.appendChild(chip);
+    });
+
+    // Chips CP — azul como v9
+    S.cpSeleccionados.forEach(id => {
+        const num = id.replace('✨','');
+        const chip = document.createElement('div');
+        chip.className = 'chip-cp-sel';
+        chip.innerHTML = `✨${num}
+            <button onclick="quitarCP('${id}')"
+                style="background:none;border:none;color:white;cursor:pointer;font-size:1.2rem;margin-left:4px;line-height:1;">×</button>`;
+        cont.appendChild(chip);
+        // Actualizar bloque reservas cada vez que se reconstruyen los chips
+        // (el update del contador se hace aquí)
+    });
+
+    // Actualizar contador
+    const cnt = document.getElementById('count-reservados');
+    if (cnt) cnt.textContent = S.misReservas.size + S.cpSeleccionados.length;
+}
+
+function renderMisCPs() {
+    const cont = document.getElementById('mis-cps-panel');
+    if (!cont) return;
+    const todos = S.misCPs;
+    if (!todos.length) { cont.innerHTML=''; return; }
+    const noPayados = todos.filter(c=>!c.paid);
+    const pagados = todos.filter(c=>c.paid);
+    let html = `<div style="background:#eff6ff;border:2px solid #3b82f6;border-radius:14px;padding:14px;margin-top:12px;">
+        <h3 style="margin-bottom:8px;color:#1e40af;">✨ Mis Cartones Personalizados (${todos.length})</h3>`;
+    if (noPayados.length) {
+        html += `<p style="font-size:.85rem;color:#3b82f6;margin-bottom:8px;">Sin pagar — selecciónalos para incluir en tu solicitud:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        ${noPayados.map(c=>{
+            const num=c.id.replace('✨','');
+            const sel=S.cpSeleccionados.includes(c.id);
+            return `<button onclick="toggleCP('${c.id}')" style="padding:8px 16px;border-radius:20px;border:2px solid ${sel?'#10b981':'#3b82f6'};background:${sel?'#10b981':'white'};color:${sel?'white':'#3b82f6'};font-weight:bold;cursor:pointer;">
+                ✨CP #${num} ${sel?'✓':''}
+            </button>`;
+        }).join('')}
+        </div>`;
+    }
+    if (pagados.length) {
+        html += `<p style="font-size:.85rem;color:#10b981;margin-bottom:6px;">✅ Pagados y activos:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${pagados.map(c=>`<span style="padding:6px 14px;border-radius:20px;background:#10b981;color:white;font-weight:bold;font-size:.88rem;">✨CP #${c.id.replace('✨','')}</span>`).join('')}
+        </div>`;
+    }
+    html += '</div>';
+    cont.innerHTML = html;
+}
+
+function toggleCP(id) {
+    if (S.cpSeleccionados.includes(id)) {
+        S.cpSeleccionados = S.cpSeleccionados.filter(x=>x!==id);
+    } else {
+        S.cpSeleccionados.push(id);
+    }
+    guardarReservasLocal();
+    resetVerificacion();
+    renderMisCPs();
+    renderChipsReservas();
+    actualizarBloqueReservas();
+}
+
+function renderMisPagados() {
+    const cont = document.getElementById('mis-pagados');
+    if (!cont) return;
+    const pagados = S.cartones.filter(c=>c.paid && (c.ownerPhone||c.owner)===S.user?.phone);
+    if (pagados.length===0){cont.innerHTML='';return;}
+    // Chips dorados estilo v9
+    const chips = pagados.map(c=>{
+        const label = c.esPersonalizado ? `✨ CP #${c.id.replace('✨','')}` : `🎫 #${c.id}`;
+        return `<div style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:white;
+            padding:10px 18px;border-radius:25px;font-weight:bold;font-size:1rem;
+            box-shadow:0 4px 10px rgba(251,191,36,.4);display:inline-flex;align-items:center;
+            gap:6px;margin:3px;">${label}</div>`;
+    }).join('');
+    cont.innerHTML = `
+    <div style="background:linear-gradient(135deg,#10b981,#059669);color:white;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 10px 28px rgba(16,185,129,.3);">
+        <h3 style="color:white;margin-bottom:6px;">🎮 MIS CARTONES A JUGAR (${pagados.length})</h3>
+        <p style="color:rgba(255,255,255,.85);font-size:.88rem;margin-bottom:12px;">Estos cartones están activos y listos para el juego</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>
+    </div>`;
+}
+
+// Página actual de la galería
+let _pagGaleria = 0;
+const PAG_SIZE = 20;
+
+function cambiarPagGaleria(delta) {
+    const total = _totalPagsGaleria || 1;
+    _pagGaleria = Math.max(0, Math.min(_pagGaleria + delta, total - 1));
+    renderGaleria();
+}
+
+function renderGaleria() {
+    const g = document.getElementById('galeria');
+    if (!g) return;
+
+    // Cartones base: libres + los míos reservados (siempre visibles)
+    const miosArr = S.cartones.filter(c => !c.esPersonalizado && S.misReservas.has(c.id));
+    const miosIds = new Set(miosArr.map(c=>c.id));
+    const libres = S.cartones.filter(c =>
+        !c.esPersonalizado && !c.paid && !c.reserved && !miosIds.has(c.id)
+    );
+    let disponibles = [...miosArr, ...libres];
+
+    // ── Paginación 20 en 20 ──
+    const total = disponibles.length;
+    const totalPags = Math.max(1, Math.ceil(total / PAG_SIZE));
+    _totalPagsGaleria = totalPags;
+    if (_pagGaleria >= totalPags) _pagGaleria = 0;
+    const desde = _pagGaleria * PAG_SIZE;
+    const pagina = disponibles.slice(desde, desde + PAG_SIZE);
+
+    // ── Info y controles ──
+    const info = document.getElementById('galeria-info');
+    if (info) info.textContent = `${total} cartones disponibles`;
+    const lbl = document.getElementById('pag-label');
+    if (lbl) lbl.textContent = `${_pagGaleria+1} / ${totalPags}`;
+    const prev = document.getElementById('btn-pag-prev');
+    const next = document.getElementById('btn-pag-next');
+    if (prev) prev.disabled = _pagGaleria === 0;
+    if (next) next.disabled = _pagGaleria >= totalPags-1;
+
+    // ── Render mini-cartones estilo v9 ──
+    g.innerHTML = '';
+    if (!pagina.length) {
+        g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#94a3b8;">No se encontraron cartones</div>';
+        return;
+    }
+    pagina.forEach(c => {
+        const esMio = S.misReservas.has(c.id);
+        // Contenedor externo
+        const wrap = document.createElement('div');
+        wrap.className = 'carton-container';
+
+        // Mini-cartón
+        const mc = document.createElement('div');
+        mc.className = 'mini-carton' + (esMio ? ' reservado' : '');
+        mc.id = 'mc-' + c.id;
+        mc.onclick = () => toggleReserva(c.id);
+
+        // Header "BINGO #ID"
+        const hdr = document.createElement('div');
+        hdr.className = 'mini-carton-header';
+        hdr.innerHTML = `<span class="bingo-text">BINGO</span><span class="carton-id" style="${esMio?'color:#fbbf24;':''}">#${c.id}</span>`;
+        mc.appendChild(hdr);
+
+        // Grid B I N G O
+        const grid = document.createElement('div');
+        grid.className = 'carton-grid';
+        LETRAS.forEach(l => {
+            const col = document.createElement('div');
+            col.className = 'carton-col';
+            // Header letra
+            const ch = document.createElement('div');
+            ch.className = 'carton-header'; ch.textContent = l;
+            col.appendChild(ch);
+            // Celdas
+            c.numbers[l].forEach((n, idx) => {
+                const cel = document.createElement('div');
+                cel.className = 'carton-cell';
+                if (l === 'N' && idx === 2 && n === 'LIBRE') {
+                    cel.classList.add('free'); cel.textContent = '★';
+                } else { cel.textContent = n; }
+                col.appendChild(cel);
+            });
+            grid.appendChild(col);
+        });
+        mc.appendChild(grid);
+        wrap.appendChild(mc);
+        g.appendChild(wrap);
+    });
+}
+
+// Actualizar solo UN mini-cartón quirúrgicamente
+function _actualizarMiniCarton(id) {
+    const el = document.getElementById(`mc-${id}`);
+    if (!el) return;
+    const esMio    = S.misReservas.has(id);
+    const carton   = S.cartones.find(c => c.id === id);
+    const pagado   = carton && carton.paid;
+    const deOtro   = carton && carton.reserved && !esMio;
+
+    if (pagado || deOtro || esMio) {
+        // ✅ Quitar de la grilla — ya reservado (propio o ajeno) o pagado
+        el.closest('div')?.remove();
+        return;
+    }
+    // Cartón libre — asegurar que no tenga clase reservado
+    el.classList.remove('reservado','selected');
+    const cidEl = el.querySelector('.carton-id');
+    if (cidEl) cidEl.style.color = '';
+}
+
+// ── TOGGLE RESERVA ───────────────────────────
+async function toggleReserva(id) {
+    if (!S.user) return;
+    const carton = S.cartones.find(c => c.id === id);
+    if (!carton) return;
+    if (S.misReservas.has(id)) { await cancelarReserva(id); return; }
+    if (carton.reserved && carton.reservedBy !== S.user.phone) {
+        notif('Ya reservado por otro jugador', 'error'); return;
+    }
+
+    // ✅ Reservar localmente PRIMERO — chips aparecen al instante
+    carton.reserved = true;
+    carton.reservedBy = S.user.phone;
+    carton.reservedAlias = S.user.alias;
+    S.misReservas.add(id);
+    guardarReservasLocal();
+    resetVerificacion();
+    notif(`📌 Cartón #${id} reservado`);
+    log(`📌 Cartón #${id} reservado`);
+    renderChipsReservas();
+    actualizarBloqueReservas();
+    // ✅ Quitar de la galería al instante — evita que otro lo tome
+    const mcWrap = document.getElementById('mc-' + id);
+    if (mcWrap) { const p = mcWrap.parentElement; if (p) p.remove(); }
+
+    // Sync a Firebase en segundo plano
+    if (S.fbConectado) {
+        try {
+            const ref = db.collection('cartones_estado').doc(String(id));
+            await db.runTransaction(async tx => {
+                const doc = await tx.get(ref);
+                const data = doc.exists ? doc.data() : {};
+                if (data.reserved && data.reservedBy !== S.user.phone) {
+                    // Otro lo tomó — revertir
+                    carton.reserved = false; carton.reservedBy = null;
+                    S.misReservas.delete(id);
+                    guardarReservasLocal();
+                    renderChipsReservas(); actualizarBloqueReservas(); _actualizarMiniCarton(id);
+                    notif(`❌ Cartón #${id} ya fue tomado`, 'error');
+                    throw new Error('REVERTIDO');
+                }
+                tx.set(ref, {
+                    id, reserved: true, reservedBy: S.user.phone,
+                    reservedAlias: S.user.alias, reservedAt: new Date().toISOString(),
+                    ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
+                }, {merge: true});
+            });
+        } catch(e) { if (e.message !== 'REVERTIDO') log('⚠️ Sync reserva: ' + e.message); }
+    }
+}
+
+async function cancelarReserva(id) {
+    const carton = S.cartones.find(c => c.id === id);
+    if (carton) { carton.reserved = false; carton.reservedBy = null; }
+    S.misReservas.delete(id);
+    guardarReservasLocal();
+    if (S.fbConectado) {
+        await db.collection('cartones_estado').doc(String(id)).update({
+            reserved: false, reservedBy: null, reservedAlias: null,
+            ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(() => {});
+    }
+    resetVerificacion();
+    log(`❌ Reserva cancelada: #${id}`);
+    renderChipsReservas();
+    actualizarBloqueReservas();
+    _actualizarMiniCarton(id);
+}
+
+async function limpiarReservas() {
+    if (!confirm('¿Limpiar TODAS tus reservas?')) return;
+    for (const id of S.misReservas) {
+        const c = S.cartones.find(x => x.id === id);
+        if (c) { c.reserved = false; c.reservedBy = null; }
+        if (S.fbConectado) await db.collection('cartones_estado').doc(String(id)).update({
+            reserved: false, reservedBy: null, reservedAlias: null,
+            ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(() => {});
+    }
+    S.misReservas.clear();
+    S.cpSeleccionados = [];
+    guardarReservasLocal();
+    resetVerificacion();
+    log('🗑️ Reservas limpiadas');
+    renderChipsReservas();
+    actualizarBloqueReservas();
+    renderGaleria();
+}
+
+function resetVerificacion() {
+    S.verificacionOk = false;
+    const rd = document.getElementById('resultado-verif');
+    if (rd) { rd.innerHTML = ''; rd.style.display = 'none'; }
+    const btn = document.getElementById('btn-sol');
+    if (btn) {
+        btn.disabled = true;
+        btn.style.cssText = 'padding:18px;font-size:1.2rem;font-weight:bold;border:none;border-radius:12px;width:100%;margin-top:12px;background:linear-gradient(135deg,#9ca3af,#6b7280);color:white;cursor:not-allowed;opacity:0.6;';
+        btn.textContent = '🔒 2. SOLICITAR ACTIVACIÓN (verifica primero)';
+    }
+}
+
+// ── PERSISTENCIA LOCAL — reservas sobreviven al cerrar ──
+const STORAGE_KEY = 'luan_v10_reservas';
+
+function guardarReservasLocal() {
+    if (!S.user) return;
+    const data = {
+        phone: S.user.phone,
+        alias: S.user.alias,
+        reservas: Array.from(S.misReservas),
+        cpSeleccionados: S.cpSeleccionados,
+        solicitudEnviada: S.solicitudEnviada,
+        savedAt: new Date().toISOString()
+    };
+    // Doble persistencia: sessionStorage (tab) + localStorage (cierre)
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify({...data, user: S.user})); } catch(e){}
+    try { localStorage.setItem(STORAGE_KEY + '_' + S.user.phone, JSON.stringify(data)); } catch(e){}
+}
+
+function restaurarReservasLocal(phone) {
+    try {
+        // 1. Intentar sessionStorage primero (más fresco)
+        const session = sessionStorage.getItem(STORAGE_KEY);
+        if (session) {
+            const d = JSON.parse(session);
+            if (d.phone === phone && !d.solicitudEnviada) {
+                (d.reservas||[]).forEach(id => S.misReservas.add(id));
+                S.cpSeleccionados = d.cpSeleccionados||[];
+                log(`📂 ${S.misReservas.size} reserva(s) restauradas (sesión)`);
+                return;
+            }
+        }
+        // 2. localStorage como fallback
+        const raw = localStorage.getItem(STORAGE_KEY + '_' + phone);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (!data.solicitudEnviada) {
+            (data.reservas||[]).forEach(id => S.misReservas.add(id));
+            S.cpSeleccionados = data.cpSeleccionados||[];
+            log(`📂 ${S.misReservas.size} reserva(s) restauradas (local)`);
+        }
+    } catch(e) { /* ignorar */ }
+}
+
+// ── SELECTOR RÁPIDO POR IDs ──────────────────
+async function seleccionarRapido() {
+    const input = document.getElementById('quick-ids')?.value.trim();
+    if (!input) return;
+    const ids = input.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=660);
+    if (!ids.length) { alert('No se encontraron IDs válidos (1-660)'); return; }
+    let sel=0, noDisp=0, yaMio=0;
+    for (const id of ids) {
+        if (S.misReservas.has(id)) { yaMio++; continue; }
+        const c = S.cartones.find(x=>x.id===id);
+        if (!c || c.paid || c.reserved) { noDisp++; continue; }
+        await toggleReserva(id);
+        sel++;
+    }
+    document.getElementById('quick-ids').value = '';
+    let msg = '';
+    if (sel)     msg += `✅ ${sel} seleccionado(s). `;
+    if (yaMio)   msg += `ℹ️ ${yaMio} ya eran tuyos. `;
+    if (noDisp)  msg += `❌ ${noDisp} no disponible(s).`;
+    if (msg) alert(msg);
+}
+
+// ── BUSCADOR POR NÚMEROS ──────────────────────
+function buscarPorNumeros() {
+    const input = document.getElementById('search-numbers')?.value.trim();
+    const div = document.getElementById('search-results');
+    if (!div) return;
+    if (!input) { div.innerHTML = ''; return; }
+
+    const nums = input.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=75);
+    if (!nums.length) {
+        div.innerHTML = '<p style="color:#ef4444;padding:10px;text-align:center;">❌ Ingresa números válidos (1-75)</p>';
+        return;
+    }
+
+    const encontrados = S.cartones.filter(c => {
+        if (c.esPersonalizado || c.paid || c.reserved) return false;
+        const todos = LETRAS.flatMap(l => c.numbers[l].filter(n=>n!=='LIBRE'));
+        return nums.every(n => todos.includes(n));
+    });
+
+    div.innerHTML = '';
+
+    if (!encontrados.length) {
+        div.innerHTML = `<div style="text-align:center;padding:20px;background:#fef3c7;border-radius:10px;">
+            <div style="font-size:2rem;">😔</div>
+            <p style="color:#92400e;margin-top:8px;">No hay cartones con: <strong>${nums.join(', ')}</strong></p>
+        </div>`;
+        return;
+    }
+
+    const titulo = document.createElement('div');
+    titulo.style.cssText = 'background:#10b981;color:white;padding:10px;border-radius:8px;margin-bottom:10px;text-align:center;font-weight:bold;';
+    titulo.textContent = `✅ ${encontrados.length} cartón(es) encontrado(s)`;
+    div.appendChild(titulo);
+
+    // Mostrar hasta 5, con botón Reservar en cada uno
+    encontrados.slice(0, 5).forEach(c => {
+        const wrap = document.createElement('div');
+        wrap.className = 'mini-carton';
+        wrap.style.marginBottom = '10px';
+
+        // Header
+        const hdr = document.createElement('div');
+        hdr.className = 'mini-carton-header';
+        hdr.innerHTML = `<span class="bingo-text">BINGO</span><span class="carton-id">#${c.id}</span>`;
+        wrap.appendChild(hdr);
+
+        // Grid con números buscados resaltados en verde
+        const grid = document.createElement('div');
+        grid.className = 'carton-grid';
+        LETRAS.forEach(l => {
+            const col = document.createElement('div');
+            col.className = 'carton-col';
+            const ch = document.createElement('div');
+            ch.className = 'carton-header';
+            ch.style.background = 'linear-gradient(135deg,#fbbf24,#f59e0b)';
+            ch.style.color = '#000';
+            ch.textContent = l;
+            col.appendChild(ch);
+            c.numbers[l].forEach((n, idx) => {
+                const cel = document.createElement('div');
+                cel.className = 'carton-cell';
+                if (l==='N' && idx===2 && n==='LIBRE') {
+                    cel.classList.add('free'); cel.textContent = '★';
+                } else {
+                    if (nums.includes(n)) {
+                        cel.style.background = '#10b981';
+                        cel.style.color = 'white';
+                        cel.style.fontWeight = '900';
+                    }
+                    cel.textContent = n;
+                }
+                col.appendChild(cel);
+            });
+            grid.appendChild(col);
+        });
+        wrap.appendChild(grid);
+
+        // Botón reservar
+        const btnDiv = document.createElement('div');
+        btnDiv.style.cssText = 'text-align:center;margin-top:6px;';
+        const esMio = S.misReservas.has(c.id);
+        btnDiv.innerHTML = esMio
+            ? `<span class="badge badge-ok">✓ Ya reservado</span>`
+            : `<button class="btn btn-primary" style="padding:6px 16px;font-size:.85rem;" onclick="toggleReserva(${c.id});buscarPorNumeros()">➕ Reservar</button>`;
+        wrap.appendChild(btnDiv);
+        div.appendChild(wrap);
+    });
+
+    if (encontrados.length > 5) {
+        const mas = document.createElement('div');
+        mas.style.cssText = 'text-align:center;margin-top:8px;color:#64748b;font-size:.88rem;';
+        mas.textContent = `... y ${encontrados.length - 5} más`;
+        div.appendChild(mas);
+    }
+}
+
+// ── ACTUALIZAR BLOQUE RESERVAS ────────────────
+function actualizarBloqueReservas() {
+    const totalItems = S.misReservas.size + S.cpSeleccionados.length;
+    const bloque = document.getElementById('bloque-reservas');
+    if (bloque) bloque.className = 'section-reservas ' + (totalItems===0 ? 'd-none' : '');
+    const cnt = document.getElementById('count-reservados');
+    if (cnt) cnt.textContent = totalItems;
+    const btnLimpiar = document.querySelector('[onclick="limpiarReservas()"]');
+    if (btnLimpiar) btnLimpiar.style.display = totalItems===0 ? 'none' : '';
+    // Botón solicitar — verde cogollo si verificado, gris si no
+    const btnSol = document.getElementById('btn-sol');
+    if (btnSol) {
+        if (S.verificacionOk && totalItems > 0) {
+            btnSol.disabled = false;
+            btnSol.style.cssText = 'padding:18px;font-size:1.2rem;font-weight:bold;border:none;border-radius:12px;width:100%;margin-top:12px;background:linear-gradient(135deg,#16a34a,#15803d);color:white;cursor:pointer;opacity:1;';
+            btnSol.textContent = '💳 2. SOLICITAR ACTIVACIÓN';
+        } else {
+            btnSol.disabled = true;
+            btnSol.style.cssText = 'padding:18px;font-size:1.2rem;font-weight:bold;border:none;border-radius:12px;width:100%;margin-top:12px;background:linear-gradient(135deg,#9ca3af,#6b7280);color:white;cursor:not-allowed;opacity:0.6;';
+            btnSol.textContent = '🔒 2. SOLICITAR ACTIVACIÓN (verifica primero)';
+        }
+    }
+}
+
+
+
+// ── SELECTOR RÁPIDO POR IDs ──────────────────
+async function seleccionarRapido() {
+    const input = document.getElementById('quick-ids')?.value.trim();
+    if (!input) return;
+    const ids = input.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=660);
+    if (!ids.length) { alert('No se encontraron IDs válidos (1-660)'); return; }
+    let sel=0, noDisp=0, yaMio=0;
+    for (const id of ids) {
+        if (S.misReservas.has(id)) { yaMio++; continue; }
+        const c = S.cartones.find(x=>x.id===id);
+        if (!c || c.paid || c.reserved) { noDisp++; continue; }
+        await toggleReserva(id);
+        sel++;
+    }
+    document.getElementById('quick-ids').value = '';
+    let msg = '';
+    if (sel)    msg += `${sel} seleccionado(s). `;
+    if (yaMio)  msg += `${yaMio} ya tuyos. `;
+    if (noDisp) msg += `${noDisp} no disp.`;
+    if (msg) notif(msg.trim(), sel>0?'success':'warning');
+}
+
+// ── BUSCADOR POR NÚMEROS ──────────────────────
+function buscarPorNumeros() {
+    const input = document.getElementById('search-numbers')?.value.trim();
+    const div = document.getElementById('search-results');
+    if (!div) return;
+    if (!input) { div.innerHTML = ''; return; }
+    const nums = input.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=75);
+    if (!nums.length) { div.innerHTML='<p style="color:#ef4444;padding:10px;text-align:center;">❌ Números válidos: 1-75</p>'; return; }
+    const encontrados = S.cartones.filter(c => {
+        if (c.esPersonalizado||c.paid||c.reserved) return false;
+        const todos = LETRAS.flatMap(l=>c.numbers[l].filter(n=>n!=='LIBRE'));
+        return nums.every(n=>todos.includes(n));
+    });
+    div.innerHTML = '';
+    if (!encontrados.length) {
+        div.innerHTML=`<div style="text-align:center;padding:16px;background:#fef3c7;border-radius:10px;"><div style="font-size:1.8rem;">😔</div><p style="color:#92400e;margin-top:6px;">No hay cartones con: <strong>${nums.join(', ')}</strong></p></div>`;
+        return;
+    }
+    const tit=document.createElement('div');
+    tit.style.cssText='background:#10b981;color:white;padding:10px;border-radius:8px;margin-bottom:10px;text-align:center;font-weight:bold;';
+    tit.textContent=`✅ ${encontrados.length} cartón(es) encontrado(s)`;
+    div.appendChild(tit);
+    encontrados.slice(0,5).forEach(c=>{
+        const wrap=document.createElement('div');
+        wrap.className='mini-carton'; wrap.style.marginBottom='10px';
+        const hdr=document.createElement('div'); hdr.className='mini-carton-header';
+        hdr.innerHTML=`<span class="bingo-text">BINGO</span><span class="carton-id">#${c.id}</span>`;
+        wrap.appendChild(hdr);
+        const grid=document.createElement('div'); grid.className='carton-grid';
+        LETRAS.forEach(l=>{
+            const col=document.createElement('div'); col.className='carton-col';
+            const ch=document.createElement('div'); ch.className='carton-header';
+            ch.style.background='linear-gradient(135deg,#fbbf24,#f59e0b)'; ch.style.color='#000'; ch.textContent=l;
+            col.appendChild(ch);
+            c.numbers[l].forEach((n,idx)=>{
+                const cel=document.createElement('div'); cel.className='carton-cell';
+                if(l==='N'&&idx===2&&n==='LIBRE'){cel.classList.add('free');cel.textContent='★';}
+                else{if(nums.includes(n)){cel.style.background='#10b981';cel.style.color='white';cel.style.fontWeight='900';}cel.textContent=n;}
+                col.appendChild(cel);
+            });
+            grid.appendChild(col);
+        });
+        wrap.appendChild(grid);
+        const btnDiv=document.createElement('div'); btnDiv.style.cssText='text-align:center;margin-top:6px;';
+        const esMio=S.misReservas.has(c.id);
+        btnDiv.innerHTML=esMio
+            ?`<span class="chip-reservado" style="font-size:.8rem;">✓ Ya reservado</span>`
+            :`<button class="btn btn-primary" style="padding:6px 16px;font-size:.85rem;" onclick="toggleReserva(${c.id});buscarPorNumeros()">➕ Reservar</button>`;
+        wrap.appendChild(btnDiv);
+        div.appendChild(wrap);
+    });
+    if(encontrados.length>5){
+        const mas=document.createElement('div');
+        mas.style.cssText='text-align:center;margin-top:8px;color:#64748b;font-size:.88rem;';
+        mas.textContent=`... y ${encontrados.length-5} más`;
+        div.appendChild(mas);
+    }
+}
+
+// ── VERIFICAR DUPLICADOS ──────────────────────
+async function verificarDuplicados() {
+    const btn = document.getElementById('btn-verif');
+    const rd  = document.getElementById('resultado-verif');
+    if (!rd) return;
+
+    if (S.misReservas.size === 0 && S.cpSeleccionados.length === 0) {
+        rd.style.display='block';
+        rd.innerHTML='<div class="verif-err">⚠️ No tienes cartones reservados aún.</div>';
+        return;
+    }
+    if (btn) { btn.disabled=true; btn.textContent='⏳ Verificando...'; }
+    rd.style.display='block'; rd.innerHTML='⏳ Consultando Firebase...';
+    const ids = Array.from(S.misReservas);
+    const problemas=[], ok=[];
+    try {
+        for (const id of ids) {
+            const snap=await db.collection('cartones_estado').doc(String(id)).get();
+            if(snap.exists){
+                const d=snap.data();
+                if(d.paid) problemas.push({id,tipo:'PAGADO',por:d.ownerAlias||d.ownerPhone||'otro'});
+                else if(d.reserved&&d.reservedBy!==S.user.phone) problemas.push({id,tipo:'RESERVADO',por:d.reservedAlias||d.reservedBy||'otro'});
+                else ok.push(id);
+            } else ok.push(id);
+        }
+        // Verificar vs solicitudes de otros jugadores
+        const solSnap=await db.collection('solicitudes_activacion')
+            .where('estado','==','pendiente').get();
+        solSnap.forEach(doc=>{
+            const d=doc.data();
+            if(d.jugadorId===S.user.phone) return;
+            (d.cartonesEstandar||[]).forEach(cid=>{
+                const numId=parseInt(cid);
+                if(ids.includes(numId)&&!problemas.find(p=>p.id===numId)){
+                    problemas.push({id:numId,tipo:'EN SOLICITUD',por:d.jugadorAlias||d.jugadorId});
+                    const i=ok.indexOf(numId);if(i>-1)ok.splice(i,1);
+                }
+            });
+        });
+        if(problemas.length===0){
+            S.verificacionOk=true;
+            rd.innerHTML=`<div class="verif-ok">✅ ¡Todo limpio! ${ok.length} cartón(es) disponibles. Ya puedes solicitar activación.</div>`;
+            actualizarBloqueReservas();
+        } else {
+            S.verificacionOk=false;
+            rd.innerHTML=`<div class="verif-err"><strong>⚠️ ${problemas.length} conflicto(s) detectado(s):</strong><br><br>
+                ${problemas.map(p=>`• Cartón #${p.id} — <strong>${p.tipo}</strong> por ${p.por}
+                <button class="btn btn-danger" style="padding:3px 8px;font-size:.78rem;margin-left:6px;" onclick="cancelarReserva(${p.id})">🗑️ Liberar</button>`).join('<br>')}
+                <br><br><small style="color:#64748b;">Libera los conflictivos y vuelve a verificar.</small></div>`;
+        }
+    } catch(e){
+        rd.innerHTML=`<div class="verif-err">❌ Error al verificar: ${e.message}</div>`;
+        log('❌ verificarDuplicados: '+e.message);
+    } finally {
+        if(btn){btn.disabled=false;btn.textContent='🔍 1. Verificar cartones antes de pagar';}
+    }
+}
+
+// ── CP CREATOR ────────────────────────────────
+let _cpPaso=0, _cpData={B:[],I:[],N:[],G:[],O:[]}, _cpTemp=[];
+function iniciarCreadorCP(){
+    if (!S.user) { notif('❌ Debes iniciar sesión', 'error'); return; }
+    // ✅ Reset completo — evita el bug B→I→B
+    _cpPaso = 0;
+    _cpData = {B:[],I:[],N:[],G:[],O:[]};
+    _cpTemp = [];
+    cerrarModal();
+    mostrarPasoCP();
+}
+function deshacerPasoCP(){
+    if (_cpPaso === 0) return;
+    _cpPaso--;
+    const letraAnterior = LETRAS[_cpPaso];
+    _cpData[letraAnterior] = [];
+    _cpTemp = [];
+    cerrarModal();
+    setTimeout(mostrarPasoCP, 80); // pequeño delay para que el modal cierre antes
+}
+function mostrarPasoCP(){
+    // Seguridad: _cpPaso nunca mayor que 4
+    if (_cpPaso > 4) { _cpPaso = 0; }
+    const letra = LETRAS[_cpPaso];
+    const cant  = COLS_CP[letra];
+    const [mn, mx] = RANGOS[letra];
+    const progPct = Math.round((_cpPaso / 5) * 100);
+    const modal   = document.getElementById('modal-cp');
+    const content = document.getElementById('modal-cp-content');
+    if (!modal || !content) return;
+
+    content.innerHTML = `
+        <h2 style="margin-bottom:6px;">🎨 Crear CP — Columna <span style="color:var(--cp);">${letra}</span></h2>
+        <div style="background:#e2e8f0;border-radius:6px;height:8px;margin-bottom:12px;overflow:hidden;">
+            <div style="width:${progPct}%;height:100%;background:var(--cp);border-radius:6px;transition:.3s;"></div>
+        </div>
+        <p style="color:#64748b;font-size:.88rem;margin-bottom:8px;">Paso ${_cpPaso+1} de 5 — Selecciona <strong>${cant}</strong> número(s) entre ${mn} y ${mx}</p>
+        <div style="font-weight:bold;font-size:1.1rem;margin-bottom:10px;color:var(--cp);" id="cp-cuenta">0 / ${cant}</div>
+        <div class="cp-nums-grid" id="cp-grid"></div>
+        <div class="flex gap mt">
+            <button class="btn btn-ol" onclick="cerrarModal()">✖ Cancelar</button>
+            ${_cpPaso > 0 ? '<button class="btn btn-warning" onclick="deshacerPasoCP()">↩ Deshacer</button>' : ''}
+            <button class="btn btn-cp" id="cp-sig" disabled onclick="siguientePasoCP()">
+                ${_cpPaso < 4 ? 'Siguiente →' : '✅ Crear CP'}
+            </button>
+        </div>`;
+
+    const grid = document.getElementById('cp-grid');
+    for (let n = mn; n <= mx; n++) {
+        const b = document.createElement('button');
+        b.className = 'cp-num-btn' + (_cpTemp.includes(n) ? ' sel' : '');
+        b.textContent = n;
+        b.onclick = () => {
+            if (_cpTemp.includes(n)) {
+                _cpTemp = _cpTemp.filter(x => x !== n);
+                b.classList.remove('sel');
+            } else if (_cpTemp.length < cant) {
+                _cpTemp.push(n);
+                b.classList.add('sel');
+            }
+            const cuenta = document.getElementById('cp-cuenta');
+            if (cuenta) cuenta.textContent = `${_cpTemp.length} / ${cant}`;
+            const sig = document.getElementById('cp-sig');
+            if (sig) sig.disabled = _cpTemp.length !== cant;
+        };
+        grid.appendChild(b);
+    }
+    modal.classList.add('active');
+}
+function siguientePasoCP(){
+    const letra=LETRAS[_cpPaso],cant=COLS_CP[letra];
+    if(_cpTemp.length!==cant){alert(`Selecciona ${cant} números`);return;}
+    _cpData[letra]=[..._cpTemp];
+    if(letra==='N')_cpData.N.splice(2,0,'LIBRE');
+    _cpTemp=[];_cpPaso++;
+    cerrarModal();
+    if(_cpPaso<5)mostrarPasoCP();else guardarCP();
+}
+// ── SISTEMA DE IDs CP CON RECICLADO ──────────────
+// IDs empiezan en 2000. Los IDs eliminados van a una cola
+// y son reasignados antes de incrementar el contador.
+async function obtenerSiguienteIdCP() {
+    if (S.fbConectado) {
+        // 1. Buscar IDs eliminados/disponibles para reciclar
+        const snap = await db.collection('cp_ids_liberados').orderBy('liberadoEn').limit(1).get();
+        if (!snap.empty) {
+            const doc = snap.docs[0];
+            const idNum = doc.data().idNum;
+            await db.collection('cp_ids_liberados').doc(doc.id).delete();
+            log(`♻️ CP ID reciclado: ✨${idNum}`);
+            return idNum;
+        }
+        // 2. Obtener el máximo ID actual y asignar el siguiente
+        const usadosSnap = await db.collection('cartones_personalizados').get();
+        let maxId = 1999;
+        usadosSnap.forEach(doc => {
+            const num = parseInt(doc.id.replace('✨',''));
+            if (!isNaN(num) && num > maxId) maxId = num;
+        });
+        return maxId + 1;
+    } else {
+        // Sin Firebase: usar el máximo de CPs locales
+        const ids = S.misCPs.map(c => parseInt(c.id?.replace('✨',''))).filter(n => !isNaN(n));
+        const maxId = ids.length ? Math.max(...ids) : 1999;
+        return maxId + 1;
+    }
+}
+
+async function liberarIdCP(idStr) {
+    const idNum = parseInt(idStr.replace('✨',''));
+    if (!isNaN(idNum) && S.fbConectado) {
+        await db.collection('cp_ids_liberados').add({ idNum, liberadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+        log(`♻️ ID ${idStr} liberado para reasignación`);
+    }
+}
+
+// ── CP ID MANAGER — cola de reciclado ─────────
+async function obtenerSiguienteCPId() {
+    if (!S.fbConectado) {
+        // Modo local: usar timestamp simple
+        return 2000 + Math.floor(Date.now() % 9000);
+    }
+    const ref = db.collection('config').doc('cp_ids');
+    return await db.runTransaction(async tx => {
+        const doc = await tx.get(ref);
+        let nextId = 2000, recycled = [];
+        if (doc.exists) {
+            nextId   = doc.data().nextId   || 2000;
+            recycled = doc.data().recycled || [];
+        }
+        let asignado;
+        if (recycled.length > 0) {
+            // ✅ Reusar el primero de la cola de reciclados
+            asignado = recycled.shift();
+            tx.set(ref, {nextId, recycled}, {merge:true});
+        } else {
+            asignado = nextId;
+            tx.set(ref, {nextId: nextId + 1, recycled}, {merge:true});
+        }
+        return asignado;
+    });
+}
+
+async function reciclarCPId(idNum) {
+    if (!S.fbConectado || !idNum) return;
+    const ref = db.collection('config').doc('cp_ids');
+    await db.runTransaction(async tx => {
+        const doc = await tx.get(ref);
+        const recycled = doc.exists ? (doc.data().recycled || []) : [];
+        if (!recycled.includes(idNum)) recycled.push(idNum);
+        recycled.sort((a,b)=>a-b); // orden ascendente — el menor se asigna primero
+        tx.set(ref, {recycled}, {merge:true});
+    });
+    log(`♻️ CP ID ${idNum} devuelto a la cola`);
+}
+
+async function guardarCP(){
+    const idNum = await obtenerSiguienteCPId();
+    const idStr = `✨${idNum}`;
+    const cp = {
+        id: idStr, idNumerico: idNum,
+        numbers: _cpData, esPersonalizado: true,
+        paid: false, owner: S.user.phone,
+        ownerPhone: S.user.phone, ownerAlias: S.user.alias,
+        creadoEn: new Date().toISOString(),
+        lastActivityDate: new Date().toISOString()
+    };
+    if (S.fbConectado) {
+        await db.collection('cartones_personalizados').doc(idStr).set({
+            ...cp,
+            creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+            lastActivityDate: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await db.collection('cartones_estado').doc(idStr).set({
+            id: idStr, esPersonalizado:true, paid:false,
+            owner: S.user.phone, ownerPhone: S.user.phone, ownerAlias: S.user.alias,
+            ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp()
+        }, {merge:true});
+    }
+    S.cartones.push(cp);
+    S.misCPs.push(cp);
+    log(`✅ CP ${idStr} creado`);
+    notif(`✅ CP ${idStr} creado exitosamente`);
+    // Resetear estado del creador
+    _cpPaso=0; _cpData={B:[],I:[],N:[],G:[],O:[]}; _cpTemp=[];
+    cerrarModal();
+    render();
+}
+
+// ── SELECTOR CP ───────────────────────────────
+function abrirSelectorCP(){
+    const disponibles=S.misCPs.filter(c=>!c.paid);
+    if(!disponibles.length){alert('No tienes CPs disponibles');return;}
+    crearModal(`<h2>🎯 Seleccionar CPs para jugar</h2>
+        <p style="color:#64748b;margin-bottom:12px;">Toca los CPs que quieres incluir en tu pago</p>
+        <div id="lista-cps" class="chips-area"></div>
+        <div class="flex gap mt">
+            <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn btn-success" onclick="guardarSelCPs()">✅ Confirmar</button>
+        </div>`);
+    const cont=document.getElementById('lista-cps');
+    disponibles.forEach(cp=>{
+        const btn=document.createElement('button');
+        const num=cp.id.replace('✨','');
+        const sel=S.cpSeleccionados.includes(cp.id);
+        btn.className=`btn ${sel?'btn-success':'btn-outline'}`;btn.textContent=`✨CP #${num}`;
+        btn.onclick=()=>{
+            if(S.cpSeleccionados.includes(cp.id))S.cpSeleccionados=S.cpSeleccionados.filter(x=>x!==cp.id);
+            else S.cpSeleccionados.push(cp.id);
+            btn.className=`btn ${S.cpSeleccionados.includes(cp.id)?'btn-success':'btn-outline'}`;
+        };
+        cont.appendChild(btn);
+    });
+}
+function guardarSelCPs(){cerrarModal();resetVerificacion();renderChipsReservas();actualizarBloqueReservas();log(`CPs seleccionados: ${S.cpSeleccionados.length}`);}
+function quitarCP(id){S.cpSeleccionados=S.cpSeleccionados.filter(x=>x!==id);resetVerificacion();renderChipsReservas();actualizarBloqueReservas();}
+
+// ── SOLICITUD DE PAGO ─────────────────────────
+async function abrirSolicitud(){
+    if(!S.verificacionOk){alert('Verifica tus cartones primero (paso 1)');return;}
+    const total=S.misReservas.size+S.cpSeleccionados.length;
+    if(!total){alert('No tienes cartones para activar');return;}
+    let precio=0;
+    try{const snap=await db.collection('config').doc('general').get();precio=snap.exists?(snap.data().valorCarton||0):0;}catch(e){}
+    let refs=[];window._refs=refs;
+    crearModal(`<h2>💳 Solicitar Activación</h2>
+        <div style="background:#f0fdf4;border:2px solid #10b981;border-radius:12px;padding:14px;margin-bottom:14px;">
+            <div><strong>Jugador:</strong> ${S.user.alias} (${S.user.phone})</div>
+            <div><strong>Cartones estándar:</strong> ${S.misReservas.size}</div>
+            <div><strong>CPs:</strong> ${S.cpSeleccionados.length}</div>
+            ${precio?`<div style="font-size:1.1rem;font-weight:bold;margin-top:6px;">Total: ${total*precio} Bs</div>`:''}
+        </div>
+        <h4>💰 Referencias de pago</h4>
+        <div id="refs-cont"></div>
+        <button class="btn btn-outline mt" onclick="agregarRef()">➕ Agregar referencia</button>
+        <div class="flex gap mt">
+            <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn" id="btn-enviar-sol" onclick="enviarSolicitud()"
+                style="background:linear-gradient(135deg,#16a34a,#15803d);color:white;padding:12px 24px;font-size:1rem;font-weight:bold;border-radius:30px;border:none;cursor:pointer;">
+                📤 Enviar Solicitud
+            </button>
+        </div>`);
+}
+function renderRefs(){
+    const c=document.getElementById('refs-cont');if(!c)return;
+    c.innerHTML=(window._refs||[]).map((r,i)=>`
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <input placeholder="N° referencia" value="${r.numero}" oninput="window._refs[${i}].numero=this.value">
+            <input placeholder="Monto Bs" type="number" value="${r.monto}" oninput="window._refs[${i}].monto=parseFloat(this.value)||0">
+        </div>`).join('');
+}
+function agregarRef(){window._refs=window._refs||[];window._refs.push({numero:'',monto:0,telefono:S.user.phone});renderRefs();}
+async function enviarSolicitud(){
+    const refs=window._refs||[];
+    if(!refs.length){notif('Agrega al menos una referencia','warning');return;}
+    if(refs.some(r=>!r.numero||!r.monto)){notif('Completa todos los campos','warning');return;}
+    const btn=document.getElementById('btn-enviar-sol');
+    if(btn){btn.disabled=true;btn.textContent='⏳ Guardando...';}
+    try{
+        const solId='SOL-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
+        const solData={
+            id:solId, jugadorId:S.user.phone, jugadorAlias:S.user.alias,
+            jugadorTelefono:S.user.phone,
+            cartonesEstandar:Array.from(S.misReservas),
+            cartonesPersonalizados:S.cpSeleccionados,
+            referenciasPago:refs,
+            totalPagado:refs.reduce((s,r)=>s+(r.monto||0),0),
+            estado:'pendiente', fechaSolicitud:new Date().toISOString(),
+            timestamp:firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('solicitudes_activacion').doc(solId).set(solData);
+        S.solicitudEnviada=true; S.verificacionOk=false;
+        S.misReservas.clear(); S.cpSeleccionados=[];
+        guardarReservasLocal();
+        log(`📤 Solicitud ${solId} guardada en Firebase`);
+        cerrarModal();
+
+        // ✅ Mostrar enlace WA en vez de window.open (Chrome bloquea popup automático)
+        const msg=`📋 NUEVA SOLICITUD LUAN BINGO v10
+
+`+
+            `Jugador: ${solData.jugadorAlias}
+`+
+            `Tel: ${solData.jugadorTelefono}
+`+
+            `Cartones: ${solData.cartonesEstandar.join(', ')||'ninguno'}
+`+
+            `CPs: ${solData.cartonesPersonalizados.join(', ')||'ninguno'}
+`+
+            `Monto: ${solData.totalPagado} Bs
+`+
+            `ID: ${solId}`;
+        const waUrl=`https://wa.me/${ADMIN_TEL}?text=${encodeURIComponent(msg)}`;
+
+        // Mostrar confirmación con botón WA que el usuario toca manualmente
+        set('app',`<div class="card center" style="max-width:480px;margin:60px auto;">
+            <div style="font-size:3rem;">✅</div>
+            <h2 style="color:#10b981;margin:10px 0;">¡Solicitud Guardada!</h2>
+            <p style="color:#64748b;margin-bottom:20px;">Tu solicitud <strong>${solId.slice(-8)}</strong> fue registrada en Firebase.</p>
+            <p style="color:#1f2937;font-weight:bold;margin-bottom:16px;">Ahora avisa al administrador por WhatsApp:</p>
+            <a href="${waUrl}" target="_blank"
+               style="display:block;background:#25d366;color:white;padding:16px;border-radius:12px;font-weight:bold;font-size:1.1rem;text-decoration:none;text-align:center;margin-bottom:12px;">
+               📱 Enviar aviso al Admin por WhatsApp
+            </a>
+            <button class="btn btn-ol w100" onclick="render()" style="padding:14px;">
+                🏠 Volver al inicio
+            </button>
+        </div>`);
+        renderJugador();
+    }catch(e){
+        notif('❌ Error: '+e.message,'error');
+        log('❌ enviarSolicitud: '+e.message);
+        if(btn){btn.disabled=false;btn.textContent='📤 Enviar Solicitud';}
+    }
+}
+function logoutJugador(){
+    if(S._unsubCartones){S._unsubCartones();S._unsubCartones=null;}
+    if(S._unsubRecientes){S._unsubRecientes();S._unsubRecientes=null;}
+    S.user=null;S.misReservas.clear();S.cpSeleccionados=[];S.misCPs=[];
+    S.solicitudEnviada=false;S.verificacionOk=false;
+    log('🚪 Sesión cerrada');render();
+}
+
+// ════════════════════════════════════════════
+//  PANEL ADMIN
+// ════════════════════════════════════════════
+function renderAdmin(){
+    set('app',`<div class="card">
+        <div class="card-header"><h2>🛡️ Panel Admin</h2><button class="btn btn-outline" onclick="logoutAdmin()">🚪 Salir</button></div>
+        <div class="flex gap wrap mb">
+            <button class="btn btn-primary" onclick="renderSolicitudes()">📋 Solicitudes</button>
+            <button class="btn btn-success" onclick="renderJuegoAdmin()">🎮 Control Juego</button>
+            <button class="btn btn-info" onclick="renderUsuarios()">👥 Usuarios</button>
+            <button class="btn btn-warning" onclick="notificarLiberacion()">📢 Notificar</button>
+            <button class="btn btn-danger" onclick="liberarCartonesNoPagados()">🔓 Liberar no pagados</button>
+        </div>
+        <div class="flex gap wrap mb">
+            <button class="btn btn-gray" onclick="resetDia()">🌅 Nuevo Día</button>
+            <button class="btn" style="background:linear-gradient(135deg,#1a1a2e,#16213e);color:#ff6b6b;border:2px solid #ff6b6b;"
+                onmousedown="iniciarHoldReset(event)" onmouseup="cancelarHoldReset()"
+                ontouchstart="iniciarHoldReset(event)" ontouchend="cancelarHoldReset()">⚠️ Reset Fábrica (mantener)</button>
+        </div>
+        <div id="admin-content"></div>
+        <div id="logs" class="logs mt"></div>
+    </div>`);
+    renderSolicitudes();
+}
+
+async function renderSolicitudes(){
+    const c=document.getElementById('admin-content');if(!c)return;
+    c.innerHTML='<p>⏳ Cargando...</p>';
+    try{
+        const snap=await db.collection('solicitudes_activacion').where('estado','==','pendiente').get();
+        if(snap.empty){c.innerHTML='<p style="color:#10b981;font-weight:bold;">✅ No hay solicitudes pendientes</p>';return;}
+        c.innerHTML=`<h3>📋 Solicitudes Pendientes (${snap.size})</h3>`+
+            snap.docs.map(doc=>{const d=doc.data();return `
+            <div class="card" style="border-left:4px solid #f59e0b;">
+                <div class="flex between"><strong>${d.jugadorAlias||'?'}</strong><span class="badge badge-warn">PENDIENTE</span></div>
+                <div style="font-size:.85rem;color:#64748b;margin:4px 0;">
+                    📱 ${d.jugadorTelefono} · 🎫 ${d.cartonesEstandar?.length||0} std · ✨ ${d.cartonesPersonalizados?.length||0} CPs<br>
+                    💰 ${d.totalPagado||0} Bs · ${d.fechaSolicitud?new Date(d.fechaSolicitud).toLocaleString('es-VE'):'?'}
+                </div>
+                <div style="font-size:.8rem;color:#475569;margin-bottom:8px;">Refs: ${(d.referenciasPago||[]).map(r=>`${r.numero} (${r.monto} Bs)`).join(', ')||'ninguna'}</div>
+                <div class="flex gap">
+                    <button class="btn btn-success" onclick="aprobarSolicitud('${doc.id}')">✅ Aprobar</button>
+                    <button class="btn btn-danger" onclick="rechazarSolicitud('${doc.id}')">❌ Rechazar</button>
+                </div>
+            </div>`}).join('');
+    }catch(e){c.innerHTML=`<p style="color:#ef4444;">Error: ${e.message}</p>`;}
+}
+
+async function aprobarSolicitud(solId){
+    if(!confirm('¿Aprobar esta solicitud?'))return;
+    try{
+        const doc=await db.collection('solicitudes_activacion').doc(solId).get();
+        const d=doc.data();const batch=db.batch();
+        for(const cid of(d.cartonesEstandar||[])){
+            const ref=db.collection('cartones_estado').doc(String(cid));
+            const carton=S.cartones.find(c=>c.id===parseInt(cid));
+            const numbers=carton?carton.numbers:null;
+            batch.set(ref,{id:parseInt(cid),paid:true,reserved:false,reservedBy:null,reservedAlias:null,
+                owner:d.jugadorId,ownerPhone:d.jugadorId,ownerAlias:d.jugadorAlias,numbers,
+                fechaPago:firebase.firestore.FieldValue.serverTimestamp(),ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+            const c=S.cartones.find(x=>x.id===parseInt(cid));
+            if(c){c.paid=true;c.reserved=false;c.owner=d.jugadorId;c.ownerPhone=d.jugadorId;c.ownerAlias=d.jugadorAlias;}
+        }
+        for(const cpId of(d.cartonesPersonalizados||[])){
+            batch.update(db.collection('cartones_personalizados').doc(cpId),{paid:true,ownerPhone:d.jugadorId,fechaPago:firebase.firestore.FieldValue.serverTimestamp()});
+            batch.set(db.collection('cartones_estado').doc(cpId),{id:cpId,paid:true,esPersonalizado:true,owner:d.jugadorId,ownerPhone:d.jugadorId,ownerAlias:d.jugadorAlias,ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        }
+        batch.update(db.collection('solicitudes_activacion').doc(solId),{estado:'aprobada',fechaAprobacion:new Date().toISOString()});
+        await batch.commit();
+        // ✅ WA completo al jugador — igual que v9
+        const listaEst = (d.cartonesEstandar||[]).map((id,i)=>`${i+1}. 🎫 Cartón #${id}`).join('\n');
+        const listaCPs = (d.cartonesPersonalizados||[]).length
+            ? '\n\n✨ *Cartones Personalizados:*\n'+(d.cartonesPersonalizados.map((id,i)=>`${i+1}. ✨ CP #${id.replace('✨','')}`).join('\n'))
+            : '';
+        const msg = `✅ *ACTIVACIÓN COMPLETA - LUAN BINGO*\n\n`+
+            `Estimado *${d.jugadorAlias}*,\n\n`+
+            `Hemos procesado tu pago de *${d.totalPagado||0} Bs*.\n\n`+
+            `✅ *TODOS TUS CARTONES ESTÁN ACTIVADOS:*\n${listaEst}${listaCPs}\n\n`+
+            `🎰 ¡Ya puedes jugar con el app LUAN BINGO!\n`+
+            `📋 ID Solicitud: ${solId}\n\n`+
+            `¡Gracias por participar! 🎉`;
+        window.open(`https://wa.me/${d.jugadorTelefono}?text=${encodeURIComponent(msg)}`,'_blank');
+        log(`✅ Solicitud ${solId} aprobada — ${d.jugadorAlias}`);
+        renderSolicitudes();
+    }catch(e){notif('❌ Error al aprobar: '+e.message,'error');}
+}
+
+async function rechazarSolicitud(solId){
+    if(!confirm('¿Rechazar?'))return;
+    await db.collection('solicitudes_activacion').doc(solId).update({estado:'rechazada'});
+    log(`❌ ${solId} rechazada`);renderSolicitudes();
+}
+
+async function renderUsuarios(){
+    const c=document.getElementById('admin-content');
+    if(!c)return;
+    c.innerHTML='<p style="text-align:center;padding:20px;">⏳ Cargando usuarios...</p>';
+    try{
+        // Primero verificar conexión
+        if(!S.fbConectado){
+            c.innerHTML='<p style="color:#ef4444;">🔴 Sin conexión Firebase. Reconecta primero.</p>';
+            return;
+        }
+        const snap=await db.collection('usuarios').get();
+        if(snap.empty){
+            c.innerHTML='<div style="text-align:center;padding:30px;color:#64748b;">👤 No hay usuarios registrados aún.</div>';
+            return;
+        }
+        let html=`<h3 style="margin-bottom:12px;">👥 Usuarios Registrados (${snap.size})</h3>`;
+        for(const doc of snap.docs){
+            const d=doc.data();
+            const phone=doc.id;
+            // Contar cartones de este jugador
+            const [pagSnap,resSnap]=await Promise.all([
+                db.collection('cartones_estado').where('ownerPhone','==',phone).where('paid','==',true).get(),
+                db.collection('cartones_estado').where('reservedBy','==',phone).where('paid','==',false).get()
+            ]);
+            const wa=phone.startsWith('58')?phone:'58'+phone.slice(1);
+            html+=`<div style="background:white;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;border-radius:10px;padding:12px;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <strong style="font-size:1rem;">${d.alias||'Sin alias'}</strong>
+                        <div style="font-size:.8rem;color:#64748b;">📱 ${phone}</div>
+                        <div style="margin-top:4px;">
+                            <span style="background:#10b981;color:white;padding:2px 8px;border-radius:10px;font-size:.75rem;margin-right:4px;">✅ ${pagSnap.size} pagados</span>
+                            <span style="background:#a855f7;color:white;padding:2px 8px;border-radius:10px;font-size:.75rem;">🔒 ${resSnap.size} reservados</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <a href="https://wa.me/${wa}" target="_blank" class="btn" style="background:#25d366;color:white;padding:6px 12px;font-size:.8rem;text-decoration:none;">📱 WA</a>
+                        <button class="btn btn-info" style="padding:6px 12px;font-size:.8rem;" onclick="verUsuario('${phone}')">👁️ Ver</button>
+                        ${resSnap.size>0?`<button class="btn btn-danger" style="padding:6px 10px;font-size:.78rem;" onclick="liberarReservasUsuario('${phone}')">🔓 Liberar</button>`:''}
+                    </div>
+                </div>
+            </div>`;
+        }
+        c.innerHTML=html;
+    }catch(e){
+        c.innerHTML=`<div style="background:#fee2e2;border-radius:10px;padding:16px;color:#991b1b;">
+            ❌ Error cargando usuarios: <strong>${e.message}</strong><br>
+            <small>Verifica la conexión Firebase y las reglas de Firestore.</small>
+        </div>`;
+        log('❌ renderUsuarios: '+e.message);
+    }
+}
+
+async function verUsuario(phone){
+    const c=document.getElementById('admin-content');c.innerHTML='<p>⏳ Cargando...</p>';
+    try{
+        const[uDoc,sEst,sRes,sCP,sSol]=await Promise.all([
+            db.collection('usuarios').doc(phone).get(),
+            db.collection('cartones_estado').where('ownerPhone','==',phone).where('paid','==',true).get(),
+            db.collection('cartones_estado').where('reservedBy','==',phone).where('paid','==',false).get(),
+            db.collection('cartones_personalizados').where('ownerPhone','==',phone).get(),
+            db.collection('solicitudes_activacion').where('jugadorId','==',phone).orderBy('timestamp','desc').limit(5).get().catch(()=>null)
+        ]);
+        const u=uDoc.exists?uDoc.data():{};
+        const wa=phone.startsWith('58')?phone:'58'+phone.replace(/^0/,'');
+        c.innerHTML=`
+        <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border-radius:14px;padding:16px;margin-bottom:12px;">
+            <div style="font-size:1.2rem;font-weight:900;">👤 ${u.alias||phone}</div>
+            <div style="opacity:.85;font-size:.9rem;margin-top:4px;">📱 ${phone}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+            <div style="background:#d1fae5;border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.8rem;font-weight:900;color:#065f46;">${sEst.size}</div><div style="font-size:.8rem;">✅ Pagados</div></div>
+            <div style="background:#fef3c7;border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.8rem;font-weight:900;color:#92400e;">${sRes.size}</div><div style="font-size:.8rem;">🔒 Reservados</div></div>
+            <div style="background:#dbeafe;border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.8rem;font-weight:900;color:#1e40af;">${sCP.size}</div><div style="font-size:.8rem;">✨ CPs</div></div>
+        </div>
+        ${sEst.size>0?`<div style="margin-bottom:10px;"><strong>✅ Pagados:</strong> ${sEst.docs.map(d=>`<span class="chip-ok" style="display:inline-flex;padding:4px 10px;border-radius:20px;margin:2px;font-size:.82rem;">#${d.data().id||d.id}</span>`).join('')}</div>`:''}
+        ${sRes.size>0?`<div style="margin-bottom:10px;"><strong>🔒 Reservas:</strong> ${sRes.docs.map(d=>`<span class="chip-reservado" style="font-size:.82rem;padding:4px 10px;">#${d.data().id||d.id}</span>`).join('')}
+            <button class="btn btn-warning" style="padding:5px 12px;font-size:.8rem;margin-left:8px;" onclick="liberarReservasUsuario('${phone}')">🔓 Liberar</button></div>`:''}
+        <div class="flex gap mt">
+            <a href="https://wa.me/${wa}" target="_blank" class="btn" style="background:#25d366;color:white;">📱 WhatsApp</a>
+            <button class="btn btn-outline" onclick="renderUsuarios()">← Volver</button>
+        </div>`;
+    }catch(e){c.innerHTML=`<p style="color:#ef4444;">Error: ${e.message}</p>`;}
+}
+
+async function liberarReservasUsuario(phone){
+    if(!confirm('¿Liberar TODAS las reservas de '+phone+'?'))return;
+    const snap=await db.collection('cartones_estado').where('reservedBy','==',phone).where('paid','==',false).get();
+    const batch=db.batch();
+    snap.forEach(doc=>batch.update(doc.ref,{reserved:false,reservedBy:null,reservedAlias:null,ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()}));
+    await batch.commit();
+    log(`🔓 ${snap.size} reservas liberadas de ${phone}`);alert(`✅ ${snap.size} reservas liberadas`);
+    verUsuario(phone);
+}
+
+// ── CONTROL DE JUEGO ─────────────────────────
+function renderJuegoAdmin(){
+    const c=document.getElementById('admin-content');if(!c)return;
+    c.innerHTML=`
+    <div style="background:linear-gradient(135deg,#1e293b,#0f172a);color:white;border-radius:16px;padding:20px;margin-bottom:12px;">
+        <h3 style="color:white;margin-bottom:12px;">🎰 Control de Juego</h3>
+        <div class="tablero" id="tablero-bingo"></div>
+        <div style="font-size:2rem;font-weight:900;text-align:center;margin:10px 0;min-height:44px;" id="ultimo-num"></div>
+    </div>
+    <div class="flex gap wrap mb">
+        <button class="btn btn-success" onclick="cantarAleatorio()">🎲 Cantar (aleatorio)</button>
+        <button class="btn btn-info" onclick="abrirDefinirPatron()">🎯 Definir Patrón</button>
+        <button class="btn btn-warning" onclick="deshacerUltimo()">↩️ Deshacer</button>
+    </div>
+    <div id="nums-cantados-div" style="margin-bottom:10px;font-size:.85rem;"></div>
+    <div id="ganadores-div"></div>
+    <div id="proximidad-div"></div>`;
+    construirTablero();actualizarUIJuego();
+}
+
+function construirTablero(){
+    const t=document.getElementById('tablero-bingo');if(!t)return;t.innerHTML='';
+    LETRAS.forEach(l=>{
+        const col=document.createElement('div');col.className='col-bingo';
+        col.innerHTML=`<div class="col-titulo">${l}</div><div class="nums-col" id="col-${l}"></div>`;
+        t.appendChild(col);
+        const nc=col.querySelector('.nums-col');
+        const[mn,mx]=RANGOS[l];
+        for(let n=mn;n<=mx;n++){
+            const d=document.createElement('div');d.className='num-cel';d.textContent=n;d.id=`nc-${n}`;
+            if(S.numerosCantados.includes(n))d.classList.add('cantado');
+            d.onclick=()=>cantarNumero(n);nc.appendChild(d);
+        }
+    });
+}
+function cantarNumero(num){
+    if(S.numerosCantados.includes(num)){if(!confirm(`¿Desmarcar el ${num}?`))return;S.numerosCantados=S.numerosCantados.filter(n=>n!==num);}
+    else S.numerosCantados.push(num);
+    actualizarUIJuego();verificarGanadoresAdmin();
+    db.collection('estado_juego').doc('actual').set({numerosCantados:S.numerosCantados,timestamp:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(()=>{});
+}
+function cantarAleatorio(){
+    const disp=[];for(let i=1;i<=75;i++)if(!S.numerosCantados.includes(i))disp.push(i);
+    if(!disp.length){alert('¡Ya se cantaron todos!');return;}
+    cantarNumero(disp[Math.floor(Math.random()*disp.length)]);
+}
+function deshacerUltimo(){
+    if(!S.numerosCantados.length)return;S.numerosCantados.pop();actualizarUIJuego();
+    db.collection('estado_juego').doc('actual').set({numerosCantados:S.numerosCantados,timestamp:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(()=>{});
+}
+function actualizarUIJuego(){
+    for(let i=1;i<=75;i++){const el=document.getElementById(`nc-${i}`);if(el)el.className='num-cel'+(S.numerosCantados.includes(i)?' cantado':'');}
+    const ult=document.getElementById('ultimo-num');
+    if(ult&&S.numerosCantados.length){
+        const n=S.numerosCantados[S.numerosCantados.length-1];
+        const letra=n<=15?'B':n<=30?'I':n<=45?'N':n<=60?'G':'O';
+        ult.textContent=`${letra}${n}`;
+    }
+    const dc=document.getElementById('nums-cantados-div');
+    if(dc)dc.textContent=`📢 Cantados (${S.numerosCantados.length}/75): ${[...S.numerosCantados].sort((a,b)=>a-b).join(', ')}`;
+    actualizarProximidadAdmin();
+    const dg=document.getElementById('ganadores-div');
+    if(dg&&S.ganadores.length)dg.innerHTML=`<h4>🏆 Ganadores</h4>${S.ganadores.map(id=>`<span class="chip-ok" style="display:inline-flex;padding:6px 14px;border-radius:20px;margin:3px;font-weight:bold;">🎫 #${id}</span>`).join('')}`;
+}
+function verificarGanadoresAdmin(){
+    S.cartones.filter(c=>c.paid).forEach(carton=>{
+        if(S.ganadores.includes(carton.id))return;
+        let ok=true;
+        for(let f=0;f<5&&ok;f++)for(let col=0;col<5&&ok;col++)
+            if(S.patron[f][col]){const n=carton.numbers[LETRAS[col]][f];if(n!=='LIBRE'&&!S.numerosCantados.includes(n))ok=false;}
+        if(ok){S.ganadores.push(carton.id);log(`🏆 BINGO — Cartón #${carton.id} de ${carton.ownerAlias||'?'}`);alert(`🎉 ¡BINGO! Cartón #${carton.id} de ${carton.ownerAlias||'?'}`);actualizarUIJuego();}
+    });
+}
+function actualizarProximidadAdmin(){
+    const div=document.getElementById('proximidad-div');if(!div)return;
+    const res=S.cartones.filter(c=>c.paid&&!S.ganadores.includes(c.id)).map(c=>{
+        let faltan=0;
+        for(let f=0;f<5;f++)for(let col=0;col<5;col++)
+            if(S.patron[f][col]){const n=c.numbers[LETRAS[col]][f];if(n!=='LIBRE'&&!S.numerosCantados.includes(n))faltan++;}
+        return{id:c.id,owner:c.ownerAlias||'?',faltan};
+    }).sort((a,b)=>a.faltan-b.faltan).slice(0,5);
+    if(!res.length)return;
+    div.innerHTML=`<h4 style="margin-bottom:8px;">🔥 Más cercanos</h4>`+res.map(r=>{
+        const total=S.patron.flat().filter(Boolean).length-1||1;
+        const pct=Math.max(0,100-(r.faltan/total*100));
+        return `<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:.85rem;"><span>#${r.id} (${r.owner})</span><span>faltan ${r.faltan}</span></div>
+        <div class="proximidad-bar"><div class="prox-fill" style="width:${pct}%"></div></div></div>`;
+    }).join('');
+}
+
+// ── PATRÓN ────────────────────────────────────
+function abrirDefinirPatron(){
+    crearModal(`<h2>🎯 Patrón de Victoria</h2>
+        <div class="flex gap mb" style="flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="patronLleno()">▦ Lleno</button>
+            <button class="btn btn-outline" onclick="patronLimpiar()">🗑️ Limpiar</button>
+        </div>
+        <div class="patron-grid" id="patron-grid"></div>
+        <div class="flex gap mt">
+            <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn btn-success" onclick="guardarPatron()">✅ Guardar</button>
+        </div>`);
+    renderPatronGrid();
+}
+function renderPatronGrid(){
+    const g=document.getElementById('patron-grid');if(!g)return;g.innerHTML='';
+    for(let f=0;f<5;f++)for(let col=0;col<5;col++){
+        const d=document.createElement('div');d.className='patron-cel'+(S.patron[f][col]?' activo':'');
+        d.textContent=(f===2&&col===2)?'★':(S.patron[f][col]?'✓':'');
+        if(!(f===2&&col===2))d.onclick=()=>{S.patron[f][col]=!S.patron[f][col];renderPatronGrid();};
+        else S.patron[2][2]=true;
+        g.appendChild(d);
+    }
+}
+function patronLleno(){for(let f=0;f<5;f++)for(let c=0;c<5;c++)S.patron[f][c]=true;renderPatronGrid();}
+function patronLimpiar(){for(let f=0;f<5;f++)for(let c=0;c<5;c++)S.patron[f][c]=(f===2&&c===2);renderPatronGrid();}
+function guardarPatron(){cerrarModal();log('🎯 Patrón guardado');verificarGanadoresAdmin();}
+
+// ── NOTIFICAR Y LIBERAR ───────────────────────
+async function notificarLiberacion(){
+    try{
+        const snap=await db.collection('cartones_estado').where('reserved','==',true).where('paid','==',false).get();
+        const j={};
+        snap.forEach(doc=>{
+            const d=doc.data();if(!d.reservedBy)return;
+            if(!j[d.reservedBy])j[d.reservedBy]={alias:d.reservedAlias||'Jugador',tel:d.reservedBy,ids:[]};
+            j[d.reservedBy].ids.push(d.id||doc.id);
+        });
+        const jugadores=Object.values(j);
+        if(!jugadores.length){notif('No hay cartones reservados sin pagar','warning');return;}
+
+        // ✅ Modal con lista — el operador elige a quién enviar, sin abrir pestañas automáticamente
+        const modal=document.getElementById('modal-usuario');
+        const content=document.getElementById('modal-usuario-content');
+        let html=`<h2 style="margin-bottom:6px;">📢 Notificar Jugadores</h2>
+            <p style="color:#64748b;font-size:.88rem;margin-bottom:14px;">${jugadores.length} jugador(es) con cartones sin pagar. Toca 📱 para enviar el aviso individualmente.</p>`;
+        jugadores.forEach(info=>{
+            const msg=`⚠️ AVISO LUAN BINGO
+
+Hola ${info.alias},
+
+Tienes cartones reservados sin pagar:
+${info.ids.map(id=>'🎫 #'+id).join(', ')}
+
+⏰ En 30 minutos serán liberados para otros jugadores.
+
+Realiza tu pago AHORA.
+
+LUAN BINGO 🎰`;
+            html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f8fafc;border-radius:10px;margin-bottom:8px;">
+                <div>
+                    <strong>${info.alias}</strong>
+                    <div style="font-size:.82rem;color:#64748b;">${info.ids.length} cartón(es): ${info.ids.map(id=>'#'+id).join(', ')}</div>
+                </div>
+                <a href="https://wa.me/${info.tel}?text=${encodeURIComponent(msg)}" target="_blank"
+                   class="btn btn-ok" style="padding:8px 14px;font-size:.85rem;white-space:nowrap;text-decoration:none;">📱 Enviar</a>
+            </div>`;
+        });
+        html+=`<button class="btn btn-ol w100 mt" onclick="document.getElementById('modal-usuario').classList.remove('active')">Cerrar</button>`;
+        content.innerHTML=html;
+        modal.classList.add('active');
+        log(`📢 Modal notificación: ${jugadores.length} jugadores`);
+    }catch(e){notif('❌ '+e.message,'error');}
+}
+async function liberarCartonesNoPagados(){
+    if(!confirm('¿Liberar AHORA todos los reservados sin pagar?'))return;
+    try{
+        const snap=await db.collection('cartones_estado').where('reserved','==',true).where('paid','==',false).get();
+        if(snap.empty){alert('No hay cartones reservados sin pagar');return;}
+        let n=0;
+        for(let i=0;i<snap.docs.length;i+=400){
+            const batch=db.batch();
+            snap.docs.slice(i,i+400).forEach(doc=>{
+                batch.update(doc.ref,{reserved:false,reservedBy:null,reservedAlias:null,reservedAt:null,liberadoEn:new Date().toISOString(),ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()});
+                const id=doc.data().id||parseInt(doc.id);const c=S.cartones.find(x=>x.id===id);
+                if(c){c.reserved=false;c.reservedBy=null;}n++;
+            });
+            await batch.commit();
+        }
+        log(`🔓 ${n} cartones liberados`);alert(`✅ ${n} liberados`);
+    }catch(e){notif('❌ Error: '+e.message,'error');}
+}
+
+// ── RESET DÍA ─────────────────────────────────
+async function resetDia(){
+    if(!confirm('🌅 NUEVO DÍA\n\nSe borran: reservas, ventas, solicitudes, números cantados.\nNO se borran: CPs, usuarios.\n\n¿Continuar?'))return;
+    if(!confirm('🚨 Última confirmación — ¿INICIAR NUEVO DÍA?'))return;
+    try{
+        for(const col of['cartones_estado','solicitudes_activacion']){
+            const snap=await db.collection(col).get();
+            for(let i=0;i<snap.docs.length;i+=400){const b=db.batch();snap.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit();}
+        }
+        await db.collection('estado_juego').doc('actual').set({activo:false,numerosCantados:[],timestamp:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        S.numerosCantados=[];S.ganadores=[];
+        S.cartones.forEach(c=>{if(!c.esPersonalizado){c.reserved=false;c.paid=false;c.owner=null;c.ownerPhone=null;c.ownerAlias=null;c.reservedBy=null;}});
+        log('🌅 NUEVO DÍA completado');alert('✅ Sistema reiniciado');renderAdmin();
+    }catch(e){notif('❌ Error: '+e.message,'error');}
+}
+
+// ── RESET FÁBRICA (hold 2s) ───────────────────
+let _holdTimer=null;
+function iniciarHoldReset(e){
+    e.preventDefault();
+    _holdTimer=setTimeout(async()=>{
+        _holdTimer=null;
+        if(!confirm('⚠️ RESET DE FÁBRICA — borrará TODO. ¿Seguro?'))return;
+        if(!confirm('🚨 ÚLTIMA CONFIRMACIÓN'))return;
+        try{
+            for(const col of['usuarios','cartones_estado','cartones_personalizados','solicitudes_activacion','estado_juego']){
+                const snap=await db.collection(col).get();
+                for(let i=0;i<snap.docs.length;i+=400){const b=db.batch();snap.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit();}
+            }
+            S.user=null;S.adminOk=false;S.cartones=[];
+            for(let i=1;i<=660;i++)S.cartones.push(generarCarton(i));
+            S.misReservas.clear();S.misCPs=[];S.cpSeleccionados=[];S.numerosCantados=[];S.ganadores=[];
+            log('⚠️ RESET FÁBRICA COMPLETADO');alert('✅ Reset completado. Recarga.');location.reload();
+        }catch(e){notif('❌ Error: '+e.message,'error');}
+    },2000);
+}
+function cancelarHoldReset(){if(_holdTimer){clearTimeout(_holdTimer);_holdTimer=null;}}
+function logoutAdmin(){S.adminOk=false;log('🚪 Admin cerró sesión');render();}
+
+// ════════════════════════════════════════════
+//  FIREBASE REALTIME + CPs
+// ════════════════════════════════════════════
+function suscribirCartones(){
+    if(S._unsubCartones){S._unsubCartones();S._unsubCartones=null;}
+    if(S._unsubRecientes){S._unsubRecientes();S._unsubRecientes=null;}
+    if(!S.user) return;
+    const phone=S.user.phone;
+    let huboCambio=false;
+
+    // ── Listener 1: mis cartones (reservados o pagados) ──
+    S._unsubCartones=db.collection('cartones_estado')
+        .where('reservedBy','==',phone)
+        .onSnapshot(snap=>{
+            snap.docChanges().forEach(ch=>{
+                const d=ch.doc.data();const id=d.id||parseInt(ch.doc.id)||ch.doc.id;
+                const c=S.cartones.find(x=>x.id===id);if(!c)return;
+                c.reserved=d.reserved||false;c.reservedBy=d.reservedBy||null;
+                c.paid=d.paid||false;c.owner=d.owner||d.ownerPhone||null;
+                c.ownerPhone=d.ownerPhone||d.owner||null;c.ownerAlias=d.ownerAlias||null;
+                if(d.paid&&(d.ownerPhone===phone||d.owner===phone)){
+                    S.misReservas.delete(id);
+                    guardarEstadoSesion();
+                    notif('✅ Cartón #'+id+' APROBADO — ¡ya puedes jugar!','success',4000);
+                }
+            });
+            mostrarCartonesAprobados();
+            actualizarVistaReservas();
+        },e=>log('⚠️ Listener mis cartones: '+e.message));
+
+    // ── Listener 2: cambios recientes de OTROS (últimos 2 min) ──
+    const hace2min=firebase.firestore.Timestamp.fromDate(new Date(Date.now()-120000));
+    S._unsubRecientes=db.collection('cartones_estado')
+        .where('ultimaActualizacion','>=',hace2min)
+        .onSnapshot(snap=>{
+            snap.docChanges().forEach(ch=>{
+                const d=ch.doc.data();const id=d.id||parseInt(ch.doc.id)||ch.doc.id;
+                if(d.reservedBy===phone)return;
+                const c=S.cartones.find(x=>x.id===id);if(!c)return;
+                const cambio=(c.reserved!==(d.reserved||false));
+                c.reserved=d.reserved||false;c.reservedBy=d.reservedBy||null;
+                c.paid=d.paid||false;
+                if(cambio)huboCambio=true;
+            });
+            if(huboCambio){huboCambio=false;invalidarCacheCartones();mostrarGaleriaCartones();actualizarEstadisticasHome();}
+        },e=>log('⚠️ Listener recientes: '+e.message));
+}
+async function cargarCPsJugador(phone){
+    S.misCPs=[];
+    try{
+        const snap=await db.collection('cartones_personalizados').where('ownerPhone','==',phone).get();
+        snap.forEach(doc=>{
+            const d=doc.data();d.id=doc.id;d.esPersonalizado=true;d.idNumerico=parseInt(doc.id.replace('✨',''))||0;
+            S.misCPs.push(d);const existe=S.cartones.find(c=>c.id===doc.id);
+            if(!existe)S.cartones.push(d);else Object.assign(existe,d);
+        });
+        log(`✨ ${snap.size} CP(s) cargados`);
+    }catch(e){log('⚠️ CPs: '+e.message);}
+}
+
+// ════════════════════════════════════════════
+//  UTILIDADES
+// ════════════════════════════════════════════
+function set(id,html){const el=document.getElementById(id);if(el)el.innerHTML=html;}
+function crearModal(html){
+    cerrarModal();
+    const m=document.createElement('div');m.className='modal on';m.id='modal-activo';
+    m.innerHTML=`<div class="modal-box">${html}</div>`;
+    m.addEventListener('click',e=>{if(e.target===m)cerrarModal();});
+    document.body.appendChild(m);return m;
+}
+function cerrarModal(){const m=document.getElementById('modal-activo');if(m)m.remove();}
+
+// ════════════════════════════════════════════
+//  INICIALIZACIÓN
+// ════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════
+//  ALIASES — compatibilidad entre arquitecturas
+// ═══════════════════════════════════════════════
+function mostrarGaleriaCartones() { renderGaleria(); }
+function actualizarVistaReservas() { renderChipsReservas(); actualizarBloqueReservas(); }
+function mostrarCartonesAprobados() { renderMisPagados(); }
+function guardarEstadoSesion() { guardarReservasLocal(); }
+function invalidarCacheCartones() {
+    // Forzar reconstrucción de la galería en el próximo renderGaleria()
+    // La galería se reconstruye siempre desde S.cartones
+}
+function actualizarEstadisticasHome() {
+    const est = S.cartones.filter(c => !c.esPersonalizado);
+    const libres   = est.filter(c => !c.reserved && !c.paid).length;
+    const reserv   = est.filter(c => c.reserved && !c.paid).length;
+    const pagados  = est.filter(c => c.paid).length;
+    ['st-total','st-libre','st-res','st-pay'].forEach((id,i) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = [est.length,libres,reserv,pagados][i];
+    });
+}
+
+async function init(){
+    // 1. Home inmediato
+    render();
+
+    // 2. Disparar signInAnonymously sin bloquear (igual que v9 — funciona)
+    // Auth anónima — opcional, falla en file:// pero Firestore sigue funcionando
+    firebase.auth().signInAnonymously().catch(()=>{});
+
+    // 3. Conectar Firestore directamente
+    try {
+        const confSnap = await db.collection('config').doc('general').get();
+        if (confSnap.exists) S.precio = confSnap.data().valorCarton || 0;
+
+        S.fbConectado = true;
+        log('✅ Firebase conectado — luanbingoadmin');
+        console.log('✅ LuanBingo v10 — Firebase OK');
+
+        // Badge
+        const fbB = document.getElementById('fb-badge');
+        if (fbB) { fbB.textContent = '🟢 Firebase'; fbB.style.background = '#10b981'; }
+        const fbSt = document.getElementById('fb-status');
+        if (fbSt) { fbSt.textContent = '🟢 Firebase conectado'; fbSt.style.color = '#10b981'; }
+
+        // Estado juego
+        const estDoc = await db.collection('estado_juego').doc('actual').get();
+        if (estDoc.exists) S.numerosCantados = estDoc.data().numerosCantados || [];
+
+        // Sincronizar cartones reservados/pagados
+        const cartSnap = await db.collection('cartones_estado').get();
+        cartSnap.forEach(doc => {
+            const d = doc.data();
+            const id = d.id || parseInt(doc.id) || doc.id;
+            const c = S.cartones.find(x => x.id === id);
+            if (c) {
+                c.reserved   = d.reserved   || false;
+                c.reservedBy = d.reservedBy  || null;
+                c.paid       = d.paid        || false;
+                c.owner      = d.owner       || d.ownerPhone || null;
+                c.ownerPhone = d.ownerPhone  || d.owner      || null;
+                c.ownerAlias = d.ownerAlias  || null;
+            }
+        });
+
+        actualizarEstadisticasHome();
+        setInterval(verificarLiberacionAutomatica, 60000);
+
+    } catch(e) {
+        S.fbConectado = false;
+        log('⚠️ Sin Firebase — modo local: ' + e.message);
+        console.error('❌ Firebase error:', e);
+        const fbBo = document.getElementById('fb-badge');
+        if (fbBo) { fbBo.textContent = '🔴 ' + e.message.slice(0, 35); fbBo.style.background = '#ef4444'; }
+        const fbSto = document.getElementById('fb-status');
+        if (fbSto) { fbSto.textContent = '🔴 ' + e.message; fbSto.style.color = '#ef4444'; }
+    }
+}
+function verificarLiberacionAutomatica() {
+    if (!S.horaInicio) return;
+    const ahora = new Date();
+    const minRestantes = Math.floor((S.horaInicio - ahora) / 60000);
+    if (minRestantes <= 30 && minRestantes >= -5) {
+        const ultima = localStorage.getItem('v10_ultima_lib');
+        const tiempoDesde = ultima ? (Date.now() - parseInt(ultima)) : Infinity;
+        if (tiempoDesde > 7200000) {
+            liberarCartonesNoPagados();
+            localStorage.setItem('v10_ultima_lib', Date.now().toString());
+            log('🔓 Liberación automática');
+        }
+    }
+}
+
+init();
+</script>
+</body>
+</html>
