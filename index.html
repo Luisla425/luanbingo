@@ -206,7 +206,7 @@ function generarCarton(id) {
     return {id, numbers, esPersonalizado:false, reserved:false, paid:false,
             owner:null, ownerPhone:null, ownerAlias:null};
 }
-for (let i=1;i<=701;i++) S.cartones.push(generarCarton(i)); // ⚠️ LEY LUAN — NO MODIFICAR
+for (let i=1;i<=700;i++) S.cartones.push(generarCarton(i)); // ⚠️ LEY LUAN — NO MODIFICAR
 
 // ── LOGGING ───────────────────────────────────
 function log(msg) {
@@ -840,7 +840,7 @@ async function seleccionarRapido() {
     const input = document.getElementById('quick-ids')?.value.trim();
     if (!input) return;
     const ids = input.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=660);
-    if (!ids.length) { alert('No se encontraron IDs válidos (1-660)'); return; }
+    if (!ids.length) { notif('❌ IDs válidos: 1-700','error'); return; }
     let sel=0, noDisp=0, yaMio=0;
     for (const id of ids) {
         if (S.misReservas.has(id)) { yaMio++; continue; }
@@ -854,7 +854,7 @@ async function seleccionarRapido() {
     if (sel)     msg += `✅ ${sel} seleccionado(s). `;
     if (yaMio)   msg += `ℹ️ ${yaMio} ya eran tuyos. `;
     if (noDisp)  msg += `❌ ${noDisp} no disponible(s).`;
-    if (msg) alert(msg);
+    if (msg) notif(msg, sel>0?'success':'warning');
 }
 
 // ── BUSCADOR POR NÚMEROS ──────────────────────
@@ -984,7 +984,7 @@ async function seleccionarRapido() {
     const input = document.getElementById('quick-ids')?.value.trim();
     if (!input) return;
     const ids = input.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=660);
-    if (!ids.length) { alert('No se encontraron IDs válidos (1-660)'); return; }
+    if (!ids.length) { notif('❌ IDs válidos: 1-700','error'); return; }
     let sel=0, noDisp=0, yaMio=0;
     for (const id of ids) {
         if (S.misReservas.has(id)) { yaMio++; continue; }
@@ -1189,7 +1189,7 @@ function mostrarPasoCP(){
 }
 function siguientePasoCP(){
     const letra=LETRAS[_cpPaso],cant=COLS_CP[letra];
-    if(_cpTemp.length!==cant){alert(`Selecciona ${cant} números`);return;}
+    if(_cpTemp.length!==cant){notif(`Selecciona ${cant} números`,'warning');return;}
     _cpData[letra]=[..._cpTemp];
     if(letra==='N')_cpData.N.splice(2,0,'LIBRE');
     _cpTemp=[];_cpPaso++;
@@ -1310,7 +1310,7 @@ async function guardarCP(){
 // ── SELECTOR CP ───────────────────────────────
 function abrirSelectorCP(){
     const disponibles=S.misCPs.filter(c=>!c.paid);
-    if(!disponibles.length){alert('No tienes CPs disponibles');return;}
+    if(!disponibles.length){notif('No tienes CPs disponibles','warning');return;}
     crearModal(`<h2>🎯 Seleccionar CPs para jugar</h2>
         <p style="color:#64748b;margin-bottom:12px;">Toca los CPs que quieres incluir en tu pago</p>
         <div id="lista-cps" class="chips-area"></div>
@@ -1337,9 +1337,9 @@ function quitarCP(id){S.cpSeleccionados=S.cpSeleccionados.filter(x=>x!==id);rese
 
 // ── SOLICITUD DE PAGO ─────────────────────────
 async function abrirSolicitud(){
-    if(!S.verificacionOk){alert('Verifica tus cartones primero (paso 1)');return;}
+    if(!S.verificacionOk){notif('Verifica tus cartones primero','warning');return;}
     const total=S.misReservas.size+S.cpSeleccionados.length;
-    if(!total){alert('No tienes cartones para activar');return;}
+    if(!total){notif('No tienes cartones para activar','warning');return;}
     let precio=0;
     try{const snap=await db.collection('config').doc('general').get();precio=snap.exists?(snap.data().valorCarton||0):0;}catch(e){}
     let refs=[];window._refs=refs;
@@ -1522,9 +1522,22 @@ async function aprobarSolicitud(solId){
             `🎰 ¡Ya puedes jugar con el app LUAN BINGO!\n`+
             `📋 ID Solicitud: ${solId}\n\n`+
             `¡Gracias por participar! 🎉`;
-        window.open(`https://wa.me/${d.jugadorTelefono}?text=${encodeURIComponent(msg)}`,'_blank');
+        // ✅ Mostrar enlace WA — no usar window.open (bloqueado en Chrome)
+        const waUrl=`https://wa.me/${d.jugadorTelefono}?text=${encodeURIComponent(msg)}`;
+        const modal=document.getElementById('modal-cp');
+        const content=document.getElementById('modal-cp-content');
+        content.innerHTML=`<div style="text-align:center;padding:10px;">
+            <div style="font-size:2rem;">✅</div>
+            <h3 style="color:#10b981;margin:8px 0;">Solicitud Aprobada</h3>
+            <p style="color:#64748b;font-size:.9rem;margin-bottom:14px;">Ahora avisa al jugador <strong>${d.jugadorAlias}</strong> por WhatsApp:</p>
+            <a href="${waUrl}" target="_blank"
+               style="display:block;background:#25d366;color:white;padding:14px;border-radius:12px;font-weight:bold;font-size:1rem;text-decoration:none;text-align:center;margin-bottom:10px;">
+               📱 Notificar a ${d.jugadorAlias} por WA
+            </a>
+            <button class="btn btn-ol w100" onclick="cerrarModal();renderSolicitudes();" style="padding:12px;">Cerrar</button>
+        </div>`;
+        modal.classList.add('active');
         log(`✅ Solicitud ${solId} aprobada — ${d.jugadorAlias}`);
-        renderSolicitudes();
     }catch(e){notif('❌ Error al aprobar: '+e.message,'error');}
 }
 
@@ -1625,7 +1638,7 @@ async function liberarReservasUsuario(phone){
     const batch=db.batch();
     snap.forEach(doc=>batch.update(doc.ref,{reserved:false,reservedBy:null,reservedAlias:null,ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()}));
     await batch.commit();
-    log(`🔓 ${snap.size} reservas liberadas de ${phone}`);alert(`✅ ${snap.size} reservas liberadas`);
+    log(`🔓 ${snap.size} reservas liberadas de ${phone}`);notif(`✅ ${snap.size} reservas liberadas`);
     verUsuario(phone);
 }
 
@@ -1672,7 +1685,7 @@ function cantarNumero(num){
 }
 function cantarAleatorio(){
     const disp=[];for(let i=1;i<=75;i++)if(!S.numerosCantados.includes(i))disp.push(i);
-    if(!disp.length){alert('¡Ya se cantaron todos!');return;}
+    if(!disp.length){notif('¡Ya se cantaron todos!','warning');return;}
     cantarNumero(disp[Math.floor(Math.random()*disp.length)]);
 }
 function deshacerUltimo(){
@@ -1699,7 +1712,7 @@ function verificarGanadoresAdmin(){
         let ok=true;
         for(let f=0;f<5&&ok;f++)for(let col=0;col<5&&ok;col++)
             if(S.patron[f][col]){const n=carton.numbers[LETRAS[col]][f];if(n!=='LIBRE'&&!S.numerosCantados.includes(n))ok=false;}
-        if(ok){S.ganadores.push(carton.id);log(`🏆 BINGO — Cartón #${carton.id} de ${carton.ownerAlias||'?'}`);alert(`🎉 ¡BINGO! Cartón #${carton.id} de ${carton.ownerAlias||'?'}`);actualizarUIJuego();}
+        if(ok){S.ganadores.push(carton.id);log(`🏆 BINGO — Cartón #${carton.id} de ${carton.ownerAlias||'?'}`);notif(`🎉 ¡BINGO! Cartón #${carton.id} de ${carton.ownerAlias||'?'}`);actualizarUIJuego();}
     });
 }
 function actualizarProximidadAdmin(){
@@ -1797,7 +1810,7 @@ async function liberarCartonesNoPagados(){
     if(!confirm('¿Liberar AHORA todos los reservados sin pagar?'))return;
     try{
         const snap=await db.collection('cartones_estado').where('reserved','==',true).where('paid','==',false).get();
-        if(snap.empty){alert('No hay cartones reservados sin pagar');return;}
+        if(snap.empty){notif('No hay cartones sin pagar','warning');return;}
         let n=0;
         for(let i=0;i<snap.docs.length;i+=400){
             const batch=db.batch();
@@ -1808,7 +1821,7 @@ async function liberarCartonesNoPagados(){
             });
             await batch.commit();
         }
-        log(`🔓 ${n} cartones liberados`);alert(`✅ ${n} liberados`);
+        log(`🔓 ${n} cartones liberados`);notif(`✅ ${n} cartones liberados`);
     }catch(e){notif('❌ Error: '+e.message,'error');}
 }
 
@@ -1824,7 +1837,7 @@ async function resetDia(){
         await db.collection('estado_juego').doc('actual').set({activo:false,numerosCantados:[],timestamp:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
         S.numerosCantados=[];S.ganadores=[];
         S.cartones.forEach(c=>{if(!c.esPersonalizado){c.reserved=false;c.paid=false;c.owner=null;c.ownerPhone=null;c.ownerAlias=null;c.reservedBy=null;}});
-        log('🌅 NUEVO DÍA completado');alert('✅ Sistema reiniciado');renderAdmin();
+        log('🌅 NUEVO DÍA completado');notif('✅ Sistema reiniciado');renderAdmin();
     }catch(e){notif('❌ Error: '+e.message,'error');}
 }
 
@@ -1844,7 +1857,7 @@ function iniciarHoldReset(e){
             S.user=null;S.adminOk=false;S.cartones=[];
             for(let i=1;i<=660;i++)S.cartones.push(generarCarton(i));
             S.misReservas.clear();S.misCPs=[];S.cpSeleccionados=[];S.numerosCantados=[];S.ganadores=[];
-            log('⚠️ RESET FÁBRICA COMPLETADO');alert('✅ Reset completado. Recarga.');location.reload();
+            log('⚠️ RESET FÁBRICA COMPLETADO');notif('✅ Reset completado');location.reload();
         }catch(e){notif('❌ Error: '+e.message,'error');}
     },2000);
 }
