@@ -1482,8 +1482,8 @@ async function renderSolicitudes(){
                 </div>
                 <div style="font-size:.8rem;color:#475569;margin-bottom:8px;">Refs: ${(d.referenciasPago||[]).map(r=>`${r.numero} (${r.monto} Bs)`).join(', ')||'ninguna'}</div>
                 <div class="flex gap">
-                    <button class="btn btn-success" onclick="aprobarSolicitud('${doc.id}')">✅ Aprobar</button>
-                    <button class="btn btn-danger" onclick="rechazarSolicitud('${doc.id}')">❌ Rechazar</button>
+                    <button class="btn btn-success" data-id="${doc.id}" onclick="aprobarSolicitud(this.dataset.id)">✅ Aprobar</button>
+                    <button class="btn btn-danger" data-id="${doc.id}" onclick="rechazarSolicitud(this.dataset.id)">❌ Rechazar</button>
                 </div>
             </div>`}).join('');
     }catch(e){c.innerHTML=`<p style="color:#ef4444;">Error: ${e.message}</p>`;}
@@ -1499,16 +1499,16 @@ async function aprobarSolicitud(solId){
             const carton=S.cartones.find(c=>c.id===parseInt(cid));
             const numbers=carton?carton.numbers:null;
             batch.set(ref,{id:parseInt(cid),paid:true,reserved:false,reservedBy:null,reservedAlias:null,
-                owner:d.jugadorId,ownerPhone:d.jugadorId,ownerAlias:d.jugadorAlias,numbers,
+                owner:d.jugadorId,ownerPhone:d.jugadorTelefono||d.jugadorId,ownerAlias:d.jugadorAlias,numbers,
                 fechaPago:firebase.firestore.FieldValue.serverTimestamp(),ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
             const c=S.cartones.find(x=>x.id===parseInt(cid));
             if(c){c.paid=true;c.reserved=false;c.owner=d.jugadorId;c.ownerPhone=d.jugadorId;c.ownerAlias=d.jugadorAlias;}
         }
         for(const cpId of(d.cartonesPersonalizados||[])){
-            batch.update(db.collection('cartones_personalizados').doc(cpId),{paid:true,ownerPhone:d.jugadorId,fechaPago:firebase.firestore.FieldValue.serverTimestamp()});
-            batch.set(db.collection('cartones_estado').doc(cpId),{id:cpId,paid:true,esPersonalizado:true,owner:d.jugadorId,ownerPhone:d.jugadorId,ownerAlias:d.jugadorAlias,ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+            batch.update(db.collection('cartones_personalizados').doc(cpId),{paid:true,ownerPhone:d.jugadorTelefono||d.jugadorId,fechaPago:firebase.firestore.FieldValue.serverTimestamp()});
+            batch.set(db.collection('cartones_estado').doc(cpId),{id:cpId,paid:true,esPersonalizado:true,owner:d.jugadorId,ownerPhone:d.jugadorTelefono||d.jugadorId,ownerAlias:d.jugadorAlias,ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
         }
-        batch.update(db.collection('solicitudes_activacion').doc(solId),{estado:'aprobada',fechaAprobacion:new Date().toISOString()});
+        batch.update(db.collection('solicitudes_activacion').doc(solId),{estado:'aprobada',fechaAprobacion:firebase.firestore.FieldValue.serverTimestamp()});
         await batch.commit();
         // ✅ WA completo al jugador — igual que v9
         const listaEst = (d.cartonesEstandar||[]).map((id,i)=>`${i+1}. 🎫 Cartón #${id}`).join('\n');
@@ -1552,51 +1552,47 @@ async function renderUsuarios(){
     if(!c)return;
     c.innerHTML='<p style="text-align:center;padding:20px;">⏳ Cargando usuarios...</p>';
     try{
-        // Primero verificar conexión
-        if(!S.fbConectado){
-            c.innerHTML='<p style="color:#ef4444;">🔴 Sin conexión Firebase. Reconecta primero.</p>';
-            return;
-        }
-        const snap=await db.collection('usuarios').get();
-        if(snap.empty){
-            c.innerHTML='<div style="text-align:center;padding:30px;color:#64748b;">👤 No hay usuarios registrados aún.</div>';
-            return;
-        }
-        let html=`<h3 style="margin-bottom:12px;">👥 Usuarios Registrados (${snap.size})</h3>`;
-        for(const doc of snap.docs){
+        if(!S.fbConectado){c.innerHTML='<p style="color:#ef4444;">🔴 Sin conexión Firebase.</p>';return;}
+        // ✅ PRO: traer todos los datos de una sola vez — sin N+1 queries
+        const [usuSnap, cartSnap] = await Promise.all([
+            db.collection('usuarios').get(),
+            db.collection('cartones_estado').get()
+        ]);
+        if(usuSnap.empty){c.innerHTML='<div style="text-align:center;padding:30px;color:#64748b;">👤 No hay usuarios registrados.</div>';return;}
+        // Agrupar cartones en memoria por ownerPhone y reservedBy
+        const pagadosPor={}, reservadosPor={};
+        cartSnap.forEach(doc=>{
             const d=doc.data();
-            const phone=doc.id;
-            // Contar cartones de este jugador
-            const [pagSnap,resSnap]=await Promise.all([
-                db.collection('cartones_estado').where('ownerPhone','==',phone).where('paid','==',true).get(),
-                db.collection('cartones_estado').where('reservedBy','==',phone).where('paid','==',false).get()
-            ]);
-            const wa=phone.startsWith('58')?phone:'58'+phone.slice(1);
+            if(d.paid&&d.ownerPhone){pagadosPor[d.ownerPhone]=(pagadosPor[d.ownerPhone]||0)+1;}
+            if(d.reserved&&!d.paid&&d.reservedBy){reservadosPor[d.reservedBy]=(reservadosPor[d.reservedBy]||0)+1;}
+        });
+        let html=`<h3 style="margin-bottom:12px;">👥 Usuarios Registrados (${usuSnap.size})</h3>`;
+        usuSnap.forEach(doc=>{
+            const d=doc.data(), phone=doc.id;
+            const pag=pagadosPor[phone]||0, res=reservadosPor[phone]||0;
+            const wa=phone.replace(/\D/g,'');
             html+=`<div style="background:white;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;border-radius:10px;padding:12px;margin-bottom:8px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
                     <div>
                         <strong style="font-size:1rem;">${d.alias||'Sin alias'}</strong>
                         <div style="font-size:.8rem;color:#64748b;">📱 ${phone}</div>
                         <div style="margin-top:4px;">
-                            <span style="background:#10b981;color:white;padding:2px 8px;border-radius:10px;font-size:.75rem;margin-right:4px;">✅ ${pagSnap.size} pagados</span>
-                            <span style="background:#a855f7;color:white;padding:2px 8px;border-radius:10px;font-size:.75rem;">🔒 ${resSnap.size} reservados</span>
+                            <span style="background:#10b981;color:white;padding:2px 8px;border-radius:10px;font-size:.75rem;margin-right:4px;">✅ ${pag} pagados</span>
+                            <span style="background:#a855f7;color:white;padding:2px 8px;border-radius:10px;font-size:.75rem;">🔒 ${res} reservados</span>
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                         <a href="https://wa.me/${wa}" target="_blank" class="btn" style="background:#25d366;color:white;padding:6px 12px;font-size:.8rem;text-decoration:none;">📱 WA</a>
-                        <button class="btn btn-info" style="padding:6px 12px;font-size:.8rem;" onclick="verUsuario('${phone}')">👁️ Ver</button>
-                        ${resSnap.size>0?`<button class="btn btn-danger" style="padding:6px 10px;font-size:.78rem;" onclick="liberarReservasUsuario('${phone}')">🔓 Liberar</button>`:''}
+                        <button class="btn btn-info" style="padding:6px 12px;font-size:.8rem;" data-id="${phone}" onclick="verUsuario(this.dataset.id)">👁️ Ver</button>
+                        ${res>0?`<button class="btn btn-danger" style="padding:6px 10px;font-size:.78rem;" data-id="${phone}" onclick="liberarReservasUsuario(this.dataset.id)">🔓 Liberar</button>`:''}
                     </div>
                 </div>
             </div>`;
-        }
+        });
         c.innerHTML=html;
     }catch(e){
-        c.innerHTML=`<div style="background:#fee2e2;border-radius:10px;padding:16px;color:#991b1b;">
-            ❌ Error cargando usuarios: <strong>${e.message}</strong><br>
-            <small>Verifica la conexión Firebase y las reglas de Firestore.</small>
-        </div>`;
-        log('❌ renderUsuarios: '+e.message);
+        c.innerHTML=`<div style="background:#fee2e2;border-radius:10px;padding:16px;color:#991b1b;">❌ ${e.message}</div>`;
+        LOG('❌ renderUsuarios: '+e.message,'error');
     }
 }
 
