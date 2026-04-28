@@ -348,6 +348,7 @@ function renderAdmin(){
             <button class="btn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;" onclick="renderConfiguracion()">⚙️ Configuración</button>
             <button class="btn" style="background:linear-gradient(135deg,#10b981,#059669);color:white;" onclick="renderPorcentaje()">💰 % a Ganar</button>
             <button class="btn" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;" onclick="renderPremios()">🏆 Premios</button>
+            <button class="btn" style="background:linear-gradient(135deg,#ec4899,#be185d);color:white;" onclick="renderGestionCPs()">✨ Gestión CPs</button>
         </div>
 
         <!-- Fila 3: Operaciones -->
@@ -405,7 +406,7 @@ async function aprobarSolicitud(solId){
             if(c){c.paid=true;c.reserved=false;c.owner=d.jugadorId;c.ownerPhone=d.jugadorId;c.ownerAlias=d.jugadorAlias;}
         }
         for(const cpId of(d.cartonesPersonalizados||[])){
-            batch.update(db.collection('cartones_personalizados').doc(cpId),{paid:true,ownerPhone:d.jugadorTelefono||d.jugadorId,fechaPago:firebase.firestore.FieldValue.serverTimestamp()});
+            batch.set(db.collection('cartones_personalizados').doc(cpId),{paid:true,ownerPhone:d.jugadorTelefono||d.jugadorId,ownerAlias:d.jugadorAlias,fechaPago:firebase.firestore.FieldValue.serverTimestamp(),ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
             batch.set(db.collection('cartones_estado').doc(cpId),{id:cpId,paid:true,esPersonalizado:true,owner:d.jugadorId,ownerPhone:d.jugadorTelefono||d.jugadorId,ownerAlias:d.jugadorAlias,ultimaActualizacion:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
         }
         batch.update(db.collection('solicitudes_activacion').doc(solId),{estado:'aprobada',fechaAprobacion:firebase.firestore.FieldValue.serverTimestamp()});
@@ -1214,6 +1215,157 @@ async function guardarPremios(){
 }
 
 
+// ════════════════════════════════════════════
+//  MÓDULO CPs — GESTIÓN COMPLETA
+// ════════════════════════════════════════════
+async function renderGestionCPs(){
+    const c=document.getElementById('admin-content');
+    if(!c)return;
+    c.innerHTML='<p style="text-align:center;padding:20px;">⏳ Cargando CPs...</p>';
+    try{
+        // Cargar todos los CPs de Firebase
+        const snap=await db.collection('cartones_personalizados').get();
+        const todos=[];
+        snap.forEach(doc=>{
+            const d=doc.data();
+            todos.push({id:doc.id,...d});
+        });
+
+        // Separar activos (paid) y pendientes
+        const activos=todos.filter(cp=>cp.paid);
+        const pendientes=todos.filter(cp=>!cp.paid);
+        const fmt=n=>new Intl.NumberFormat('es-VE').format(n);
+
+        c.innerHTML=`
+        <h3 style="margin-bottom:14px;">✨ Gestión de Cartones Personalizados</h3>
+
+        <!-- Botón WA lista CPs activos -->
+        <button class="btn btn-success w100" onclick="enviarCPsPorWA()" style="margin-bottom:16px;padding:14px;font-size:1rem;">
+            📱 Enviar lista de CPs activos por WhatsApp
+        </button>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:0;border-radius:12px;overflow:hidden;border:2px solid #e2e8f0;margin-bottom:16px;">
+            <button id="tab-activos" onclick="switchTabCP('activos')"
+                style="flex:1;padding:12px;font-weight:bold;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;cursor:pointer;">
+                ✅ Activos hoy (${activos.length})
+            </button>
+            <button id="tab-todos" onclick="switchTabCP('todos')"
+                style="flex:1;padding:12px;font-weight:bold;border:none;background:#e5e7eb;color:#374151;cursor:pointer;">
+                📋 Todos los CPs (${todos.length})
+            </button>
+        </div>
+
+        <div id="cp-tab-activos">${renderListaCPs(activos, true)}</div>
+        <div id="cp-tab-todos" style="display:none;">${renderListaCPs(todos, false)}</div>
+        `;
+
+        // Guardar para WA
+        window._cpsTodos=todos;
+        window._cpsActivos=activos;
+
+    }catch(e){
+        c.innerHTML=`<div style="background:#fee2e2;border-radius:10px;padding:16px;color:#991b1b;">❌ ${e.message}</div>`;
+    }
+}
+
+function renderListaCPs(cps, soloActivos){
+    if(!cps.length) return '<div style="text-align:center;padding:20px;color:#64748b;">No hay CPs aquí</div>';
+    return cps.map(cp=>{
+        const num=cp.id.replace('✨','');
+        const letras=['B','I','N','G','O'];
+        const numeros=letras.map(l=>(cp.numbers&&cp.numbers[l]?cp.numbers[l].join(', '):'?')).join(' | ');
+        return `<div style="background:${cp.paid?'#f0fdf4':'#faf5ff'};border:2px solid ${cp.paid?'#10b981':'#a855f7'};border-radius:12px;padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div>
+                    <span style="font-weight:900;font-size:1.1rem;color:${cp.paid?'#10b981':'#7c3aed'};">✨ CP #${num}</span>
+                    <span style="margin-left:8px;font-size:.82rem;color:#64748b;">${cp.ownerAlias||'?'} · ${cp.ownerPhone||''}</span>
+                    ${cp.paid?'<span style="margin-left:6px;background:#10b981;color:white;padding:2px 8px;border-radius:10px;font-size:.75rem;">✅ Activo</span>':'<span style="margin-left:6px;background:#a855f7;color:white;padding:2px 8px;border-radius:10px;font-size:.75rem;">⏳ Pendiente</span>'}
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button class="btn btn-info" style="padding:6px 10px;font-size:.78rem;" onclick="verNumerosCPs('${cp.id}')">👁️ Números</button>
+                    <button class="btn btn-danger" style="padding:6px 10px;font-size:.78rem;" onclick="eliminarCP('${cp.id}','${cp.ownerAlias||'?'}')">🗑️ Borrar</button>
+                </div>
+            </div>
+            <div style="font-size:.8rem;color:#64748b;margin-top:6px;">
+                B: ${(cp.numbers&&cp.numbers.B)||'?'} | I: ${(cp.numbers&&cp.numbers.I)||'?'} | N: ${(cp.numbers&&cp.numbers.N)||'?'} | G: ${(cp.numbers&&cp.numbers.G)||'?'} | O: ${(cp.numbers&&cp.numbers.O)||'?'}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function switchTabCP(tab){
+    document.getElementById('cp-tab-activos').style.display=tab==='activos'?'':'none';
+    document.getElementById('cp-tab-todos').style.display=tab==='todos'?'':'none';
+    document.getElementById('tab-activos').style.background=tab==='activos'?'linear-gradient(135deg,#10b981,#059669)':'#e5e7eb';
+    document.getElementById('tab-activos').style.color=tab==='activos'?'white':'#374151';
+    document.getElementById('tab-todos').style.background=tab==='todos'?'linear-gradient(135deg,#8b5cf6,#7c3aed)':'#e5e7eb';
+    document.getElementById('tab-todos').style.color=tab==='todos'?'white':'#374151';
+}
+
+function verNumerosCPs(cpId){
+    const cp=(window._cpsTodos||[]).find(c=>c.id===cpId);
+    if(!cp){notif('CP no encontrado','error');return;}
+    const letras=['B','I','N','G','O'];
+    const num=cpId.replace('✨','');
+    crearModal(`<h3 style="margin-bottom:14px;">✨ CP #${num} — Números</h3>
+        <p style="color:#64748b;font-size:.85rem;margin-bottom:12px;">Jugador: ${cp.ownerAlias||'?'} · ${cp.ownerPhone||''}</p>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;">
+            ${letras.map(l=>`<div style="background:#f8fafc;border-radius:10px;padding:10px;text-align:center;">
+                <div style="font-weight:900;color:#764ba2;margin-bottom:6px;">${l}</div>
+                ${(cp.numbers&&cp.numbers[l]||[]).map(n=>`<div style="background:${n==='LIBRE'?'#fef08a':'white'};border:1px solid #e2e8f0;border-radius:6px;padding:4px;margin:2px;font-weight:bold;font-size:.9rem;">${n==='LIBRE'?'★':n}</div>`).join('')}
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-outline w100" onclick="cerrarModal()">Cerrar</button>`);
+}
+
+async function eliminarCP(cpId, alias){
+    if(!confirm('¿Borrar CP #'+cpId.replace('✨','')+' de '+alias+'?\n\nEsta acción no se puede deshacer.'))return;
+    try{
+        await db.collection('cartones_personalizados').doc(cpId).delete();
+        await db.collection('cartones_estado').doc(cpId).delete().catch(()=>{});
+        notif('✅ CP '+cpId+' eliminado','success');
+        log('🗑️ CP '+cpId+' eliminado ('+alias+')');
+        renderGestionCPs(); // Recargar
+    }catch(e){
+        notif('❌ Error: '+e.message,'error');
+    }
+}
+
+async function eliminarTodosCPs(){
+    if(!confirm('⚠️ ¿Borrar TODOS los CPs?\n\nEsta acción borra absolutamente todos los cartones personalizados. No se puede deshacer.'))return;
+    if(!confirm('🚨 CONFIRMA: ¿Borrar TODOS los CPs sin excepción?'))return;
+    try{
+        const snap=await db.collection('cartones_personalizados').get();
+        for(let i=0;i<snap.docs.length;i+=400){
+            const batch=db.batch();
+            snap.docs.slice(i,i+400).forEach(doc=>{
+                batch.delete(doc.ref);
+                batch.delete(db.collection('cartones_estado').doc(doc.id));
+            });
+            await batch.commit();
+        }
+        notif('✅ Todos los CPs eliminados','success');
+        log('🗑️ TODOS los CPs eliminados');
+        renderGestionCPs();
+    }catch(e){notif('❌ Error: '+e.message,'error');}
+}
+
+async function enviarCPsPorWA(){
+    const activos=(window._cpsActivos||[]);
+    if(!activos.length){notif('No hay CPs activos hoy','warning');return;}
+    const letras=['B','I','N','G','O'];
+    const lista=activos.map(cp=>{
+        const num=cp.id.replace('✨','');
+        const nums=letras.map(l=>`${l}: ${(cp.numbers&&cp.numbers[l]||[]).join(', ')}`).join(' | ');
+        return `✨CP #${num} (${cp.ownerAlias||'?'})\n${nums}`;
+    }).join('\n\n');
+    const msg=`🎰 LUAN BINGO — CPs ACTIVOS HOY\n\n${lista}\n\n📋 Total: ${activos.length} CP(s)\nCualquiera puede verificar que estos CPs existen y están activos.`;
+    const url='https://wa.me/?text='+encodeURIComponent(msg);
+    window.open(url,'_blank');
+}
+
+
 function verificarLiberacionAutomatica() {
     if (!S.horaInicio) return;
     const ahora = new Date();
@@ -1232,4 +1384,5 @@ function verificarLiberacionAutomatica() {
 init();
 </script>
 </body>
-</htmlc
+</html>
+
