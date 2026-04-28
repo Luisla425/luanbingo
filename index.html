@@ -424,9 +424,7 @@ async function aprobarSolicitud(solId){
             `¡Gracias por participar! 🎉`;
         // ✅ Mostrar enlace WA — no usar window.open (bloqueado en Chrome)
         const waUrl=`https://wa.me/${d.jugadorTelefono}?text=${encodeURIComponent(msg)}`;
-        const modal=document.getElementById('modal-cp');
-        const content=document.getElementById('modal-cp-content');
-        content.innerHTML=`<div style="text-align:center;padding:10px;">
+        crearModal(`<div style="text-align:center;padding:10px;">
             <div style="font-size:2rem;">✅</div>
             <h3 style="color:#10b981;margin:8px 0;">Solicitud Aprobada</h3>
             <p style="color:#64748b;font-size:.9rem;margin-bottom:14px;">Ahora avisa al jugador <strong>${d.jugadorAlias}</strong> por WhatsApp:</p>
@@ -435,9 +433,8 @@ async function aprobarSolicitud(solId){
                📱 Notificar a ${d.jugadorAlias} por WA
             </a>
             <button class="btn btn-ol w100" onclick="cerrarModal();renderSolicitudes();" style="padding:12px;">Cerrar</button>
-        </div>`;
-        modal.classList.add('active');
-        log(`✅ Solicitud ${solId} aprobada — ${d.jugadorAlias}`);
+        </div>`);
+          log(`✅ Solicitud ${solId} aprobada — ${d.jugadorAlias}`);
     }catch(e){notif('❌ Error al aprobar: '+e.message,'error');}
 }
 
