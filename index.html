@@ -764,7 +764,7 @@ function iniciarHoldReset(e){
                 for(let i=0;i<snap.docs.length;i+=400){const b=db.batch();snap.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit();}
             }
             S.user=null;S.adminOk=false;S.cartones=[];
-            for(let i=1;i<=660;i++)S.cartones.push(generarCarton(i));
+            for(let i=1;i<=700;i++)S.cartones.push(generarCarton(i));
             S.misReservas.clear();S.misCPs=[];S.cpSeleccionados=[];S.numerosCantados=[];S.ganadores=[];
             log('⚠️ RESET FÁBRICA COMPLETADO');notif('✅ Reset completado');location.reload();
         }catch(e){notif('❌ Error: '+e.message,'error');}
@@ -1335,13 +1335,19 @@ function verNumerosCPs(cpId){
 }
 
 async function eliminarCP(cpId, alias){
-    if(!confirm('¿Borrar CP #'+cpId.replace('✨','')+' de '+alias+'?\n\nEsta acción no se puede deshacer.'))return;
+    const num = cpId.replace('✨','');
+    const confirmacion = prompt('🗑️ Vas a borrar CP #'+num+' de '+alias+'\n\nEscribe el número del CP para confirmar:');
+    if(confirmacion === null) return; // Canceló
+    if(confirmacion !== num){
+        notif('❌ Número incorrecto — no se borró nada','error');
+        return;
+    }
     try{
         await db.collection('cartones_personalizados').doc(cpId).delete();
         await db.collection('cartones_estado').doc(cpId).delete().catch(()=>{});
         notif('✅ CP '+cpId+' eliminado','success');
         log('🗑️ CP '+cpId+' eliminado ('+alias+')');
-        renderGestionCPs(); // Recargar
+        renderGestionCPs();
     }catch(e){
         notif('❌ Error: '+e.message,'error');
     }
