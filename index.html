@@ -374,8 +374,18 @@ async function renderSolicitudes(){
     const c=document.getElementById('admin-content');if(!c)return;
     c.innerHTML='<p>⏳ Cargando...</p>';
     try{
-        const snap=await db.collection('solicitudes_activacion').where('estado','==','pendiente').get();
-        if(snap.empty){c.innerHTML='<p style="color:#10b981;font-weight:bold;">✅ No hay solicitudes pendientes</p>';return;}
+        const [snapPend, snapAprob] = await Promise.all([
+            db.collection('solicitudes_activacion').where('estado','==','pendiente').get(),
+            db.collection('solicitudes_activacion').where('estado','==','aprobada')
+                .orderBy('fechaAprobacion','desc').limit(5).get().catch(()=>({empty:true,docs:[]}))
+        ]);
+        if(snapPend.empty && snapAprob.empty){
+            c.innerHTML='<p style="color:#10b981;font-weight:bold;">✅ No hay solicitudes pendientes</p>';return;
+        }
+        if(snapPend.empty && !snapAprob.empty){
+            c.innerHTML='<p style="color:#10b981;font-weight:bold;margin-bottom:12px;">✅ No hay solicitudes pendientes</p>';
+        }
+        const snap = snapPend;
         c.innerHTML=`<h3>📋 Solicitudes Pendientes (${snap.size})</h3>`+
             snap.docs.map(doc=>{const d=doc.data();return `
             <div class="card" style="border-left:4px solid #f59e0b;">
@@ -439,6 +449,8 @@ async function aprobarSolicitud(solId){
             <button class="btn btn-ol w100" onclick="cerrarModal();renderSolicitudes();" style="padding:12px;">Cerrar</button>
         </div>`);
           log(`✅ Solicitud ${solId} aprobada — ${d.jugadorAlias}`);
+        // Guardar para posible reenvío
+        window._ultimaAprobacion = {solId, waUrl, alias: d.jugadorAlias, tel: d.jugadorTelefono};
     }catch(e){notif('❌ Error al aprobar: '+e.message,'error');}
 }
 
@@ -1367,6 +1379,22 @@ async function enviarCPsPorWA(){
     const url='https://wa.me/?text='+encodeURIComponent(msg);
     window.open(url,'_blank');
 }
+
+
+// ── REENVIAR APROBACIÓN AL JUGADOR ──────────
+function reenviarAprobacion(tel, alias, solId){
+    const listaEst = [];
+    const listaCPs = [];
+    const msg = '✅ *RECORDATORIO — LUAN BINGO*\n\n'+
+        'Estimado *'+alias+'*,\n\n'+
+        'Tu solicitud *'+solId+'* fue APROBADA.\n\n'+
+        '🎰 Abre el app LUAN BINGO y toca el banner verde para cargar tus cartones.\n\n'+
+        'Si no ves el banner, toca "🎮 JUGAR BINGO" para cargarlos manualmente.';
+    const url = 'https://wa.me/'+tel+'?text='+encodeURIComponent(msg);
+    window.open(url, '_blank');
+    notif('📱 Reenviando aviso a '+alias,'success');
+}
+window.reenviarAprobacion = reenviarAprobacion;
 
 
 function verificarLiberacionAutomatica() {
